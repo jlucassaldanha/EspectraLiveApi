@@ -6,18 +6,18 @@ public static class AuthEndpoints
 	{
 		var group = app.MapGroup("/auth");
 
-		group.MapGet("/login", async () =>
+		group.MapGet("/login", async (IConfiguration config) =>
 		{
-			var CLIENT_ID = "";
-			var REDIRECT_URI = "";
+			var clientId = config["CLIENT_ID"];
+			var redirectUri = config["REDIRECT_URI"];
 
 			string twitchAuthUrl = 
 				"https://id.twitch.tv/oauth2/authorize" +
 				"?response_type=code" +
-        		$"&client_id={CLIENT_ID}" +
-        		$"&redirect_uri={REDIRECT_URI}" +
+        		$"&client_id={clientId}" +
+        		$"&redirect_uri={redirectUri}" +
 				"&scope=user:read:email moderation:read moderator:read:chatters";
-				
+
 			return Results.Redirect(twitchAuthUrl);
 		});
 	}
