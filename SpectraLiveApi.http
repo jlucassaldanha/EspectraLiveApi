@@ -1,0 +1,6 @@
+@SpectraLiveApi_HostAddress = http://localhost:5055
+
+GET {{SpectraLiveApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
