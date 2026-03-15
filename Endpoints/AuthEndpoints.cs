@@ -9,7 +9,7 @@ public static class AuthEndpoints
 		group.MapGet("/login", async (IConfiguration config) =>
 		{
 			var clientId = config["CLIENT_ID"];
-			var redirectUri = config["REDIRECT_URI"];
+			var redirectUri = config["API_URI"] + "/auth/callback";
 
 			string twitchAuthUrl = 
 				"https://id.twitch.tv/oauth2/authorize" +
@@ -19,6 +19,16 @@ public static class AuthEndpoints
 				"&scope=user:read:email moderation:read moderator:read:chatters";
 
 			return Results.Redirect(twitchAuthUrl);
+		});
+
+		group.MapGet("/callback", async (ICloneable config, string code, string? error) =>
+		{
+			if (error != null)
+			{
+				return Results.Unauthorized();
+			}
+
+			return null;
 		});
 	}
 }
