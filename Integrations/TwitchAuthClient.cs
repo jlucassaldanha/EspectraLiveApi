@@ -29,7 +29,7 @@ public class TwitchAuthClient
 
 		var content = new FormUrlEncodedContent(data);
 
-		var response = await _httpClient.PostAsync("/token", content);
+		var response = await _httpClient.PostAsync("token", content);
 
 		if (response.IsSuccessStatusCode)
 		{
@@ -55,7 +55,7 @@ public class TwitchAuthClient
 
 		var content = new FormUrlEncodedContent(data);
 
-		var response = await _httpClient.PostAsync("/token", content);
+		var response = await _httpClient.PostAsync("token", content);
 
 		if (response.IsSuccessStatusCode)
 		{

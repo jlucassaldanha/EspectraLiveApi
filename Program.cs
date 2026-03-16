@@ -1,10 +1,11 @@
 using SpectraLiveApi.DTOs;
 using SpectraLiveApi.Endpoints;
 using SpectraLiveApi.Integrations;
+using SpectraLiveApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var frontendUrl = builder.Configuration["SpectraLive:FrontendUrl"] ?? "http://localhost:3000";
+var frontendUrl = builder.Configuration["SpectraLive:FrontendUrl"] ?? "http://localhost:8000";
 
 builder.Services.AddCors(options =>
 {
@@ -24,8 +25,10 @@ builder.Services.Configure<SpectraLiveSettings>(builder.Configuration.GetSection
 
 builder.Services.AddHttpClient<TwitchAuthClient>((HttpClient client) =>
 {
-    client.BaseAddress = new Uri("https://id.twitch.tv/oauth2");
+    client.BaseAddress = new Uri("https://id.twitch.tv/oauth2/");
 });
+
+builder.Services.AddScoped<AuthService>();
 
 var app = builder.Build();
 
@@ -33,4 +36,4 @@ app.UseCors();
 
 app.MapAuthEndpoints();
 
-app.Run();
+app.Run("http://localhost:8000");

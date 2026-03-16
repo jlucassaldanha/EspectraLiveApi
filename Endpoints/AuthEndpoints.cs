@@ -1,4 +1,4 @@
-using SpectraLiveApi.Integrations;
+using Microsoft.Extensions.Options;
 using SpectraLiveApi.DTOs;
 using SpectraLiveApi.Services;
 
@@ -10,16 +10,13 @@ public static class AuthEndpoints
 	{
 		var group = app.MapGroup("/auth");
 
-		group.MapGet("/login", async (IConfiguration config) =>
+		group.MapGet("/login", async (IOptions<TwitchSettings> twitchOptions, IOptions<SpectraLiveSettings> spectraLiveOptions) =>
 		{
-			var clientId = config["Twitch:ClientId"];
-			var redirectUri = config["SpectraLive:ApiUrl"] + "/auth/callback";
-
 			string twitchAuthUrl = 
 				"https://id.twitch.tv/oauth2/authorize" +
 				"?response_type=code" +
-        		$"&client_id={clientId}" +
-        		$"&redirect_uri={redirectUri}" +
+        		$"&client_id={twitchOptions.Value.ClientId}" +
+        		$"&redirect_uri={spectraLiveOptions.Value.ApiUrl}/auth/callback" +
 				"&scope=user:read:email moderation:read moderator:read:chatters";
 
 			return Results.Redirect(twitchAuthUrl);
@@ -53,6 +50,11 @@ public static class AuthEndpoints
 			var frontendUrl = config["SpectraLive:FrontendUrl"];
 	
 			return Results.Redirect(config["SpectraLive:FrontendUrl"] + "/dashboard");
+		});
+
+		group.MapGet("/me", async () =>
+		{
+			
 		});
 	}
 }
