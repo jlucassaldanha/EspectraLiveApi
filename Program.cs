@@ -1,6 +1,7 @@
 using SpectraLiveApi.DTOs;
 using SpectraLiveApi.Endpoints;
 using SpectraLiveApi.Integrations;
+using SpectraLiveApi.Repositories;
 using SpectraLiveApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +30,8 @@ builder.Services.AddHttpClient<TwitchAuthClient>((HttpClient client) =>
 });
 
 builder.Services.AddScoped<AuthService>();
+
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 var app = builder.Build();
 
