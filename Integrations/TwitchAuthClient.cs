@@ -67,5 +67,7 @@ public class TwitchAuthClient
 			var refreshTokenError = await response.Content.ReadFromJsonAsync<TwitchRefreshTokenError>();
 			return new Result<TwitchRefreshTokenResponse, TwitchRefreshTokenError> { Error = refreshTokenError };
 		}
+
+		// Ainda falta a parte que verifica se tem o usuario na memoria e atualiza
 	}
 }

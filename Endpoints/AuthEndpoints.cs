@@ -1,3 +1,7 @@
+using SpectraLiveApi.Integrations;
+using SpectraLiveApi.DTOs;
+using SpectraLiveApi.Services;
+
 namespace SpectraLiveApi.Endpoints;
 
 public static class AuthEndpoints
@@ -8,8 +12,8 @@ public static class AuthEndpoints
 
 		group.MapGet("/login", async (IConfiguration config) =>
 		{
-			var clientId = config["CLIENT_ID"];
-			var redirectUri = config["API_URI"] + "/auth/callback";
+			var clientId = config["Twitch:ClientId"];
+			var redirectUri = config["SpectraLive:ApiUrl"] + "/auth/callback";
 
 			string twitchAuthUrl = 
 				"https://id.twitch.tv/oauth2/authorize" +
@@ -21,14 +25,34 @@ public static class AuthEndpoints
 			return Results.Redirect(twitchAuthUrl);
 		});
 
-		group.MapGet("/callback", async (ICloneable config, string code, string? error) =>
+		group.MapGet("/callback", async (HttpContext context, IConfiguration config, AuthService authService, string code, string? error) =>
 		{
-			if (error != null)
-			{
-				return Results.Unauthorized();
-			}
+			if (error != null) return Results.Unauthorized();
 
-			return null;
+			var sessionResponse = await authService.GetSessionWithTwitchCode(code);
+
+			if (sessionResponse.Error != null)
+				return Results.BadRequest(new { Error = sessionResponse.Error.ErrorMessage });
+			
+
+			if (sessionResponse.Success == null)
+				return Results.BadRequest(new { Error = "Erro inesperado em callback" });
+
+			context.Response.Cookies.Append(
+				"sessionToken", 
+				sessionResponse.Success.SessionToken, 
+				new CookieOptions
+				{
+					HttpOnly = true,
+					Secure = true,
+					SameSite = SameSiteMode.None,
+					Expires = DateTimeOffset.UtcNow.AddMinutes(5)
+				}
+			);
+			
+			var frontendUrl = config["SpectraLive:FrontendUrl"];
+	
+			return Results.Redirect(config["SpectraLive:FrontendUrl"] + "/dashboard");
 		});
 	}
 }

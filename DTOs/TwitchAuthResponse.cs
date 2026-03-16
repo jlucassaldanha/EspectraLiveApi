@@ -7,9 +7,3 @@ public record TwitchAuthResponse(
     List<string> Scope,
     string TokenType
 );
-
-public record TwitchAuthError(
-    string Error,
-    int Status,
-    string Message
-);
