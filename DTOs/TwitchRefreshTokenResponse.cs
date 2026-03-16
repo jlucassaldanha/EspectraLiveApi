@@ -1,9 +1,8 @@
 namespace SpectraLiveApi.DTOs;
 
-public record TwitchAuthResponse(
+public record TwitchRefreshTokenResponse(
     string AccessToken,
-    int ExpiresIn,
     string RefreshToken,
     List<string> Scope,
     string TokenType
-    );
+);

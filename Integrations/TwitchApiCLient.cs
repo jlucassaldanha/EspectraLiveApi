@@ -13,9 +13,5 @@ public class TwitchApiClient
 		_httpClient = httpClient;
 	}
 
-	public async Task<TwitchAuthResponse?> GetAuthToken(string code, string clientId, string clientSecret, string redirectUri)
-	{
-
-		return await _httpClient.GetFromJsonAsync<TwitchAuthResponse>("");
-	}
+	
 }
