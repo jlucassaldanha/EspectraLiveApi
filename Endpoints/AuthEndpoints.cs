@@ -1,5 +1,8 @@
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using SpectraLiveApi.DTOs;
+using SpectraLiveApi.Integrations;
+using SpectraLiveApi.Repositories;
 using SpectraLiveApi.Services;
 
 namespace SpectraLiveApi.Endpoints;
@@ -52,8 +55,24 @@ public static class AuthEndpoints
 			return Results.Redirect(config["SpectraLive:FrontendUrl"] + "/dashboard");
 		});
 
-		group.MapGet("/me", async () =>
+		group.MapGet("/me", async (HttpContext context, AuthService authService) =>
 		{
+			context.Request.Cookies.TryGetValue("SessionToken", out var sessionToken);
+			context.Request.Cookies.TryGetValue("AuthToken", out var authToken);
+
+			
+			if (authToken == null && sessionToken != null)
+			{
+				await authService.GetUserInformationWithSession();
+				
+				context.Response.Cookies.Delete("SessionToken");
+			}
+
+			if (sessionToken == null && authToken != null)
+			{
+				await authService.GetUserInformationWithJwt();
+			}
+
 			
 		});
 	}

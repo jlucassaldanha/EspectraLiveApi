@@ -9,10 +9,9 @@ public class User
 	public string TwitchId { get; private set; }
 	public string Login { get; private set; }
 	public string DisplayName { get; private set; }
-	public string Email { get; private set; }
 	public string ProfileImgUrl { get; private set; }
 
-	public User(string accessToken, string refreshToken, string expiresIn, string twitchId, string login, string displayName, string email, string profileImgUrl)
+	public User(string accessToken, string refreshToken, string expiresIn, string twitchId, string login, string displayName, string profileImgUrl)
 	{
 		AccessToken = accessToken;
 		RefreshToken = refreshToken;
@@ -20,7 +19,6 @@ public class User
 		TwitchId = twitchId;
 		Login = login;
 		DisplayName = displayName;
-		Email = email;
 		ProfileImgUrl = profileImgUrl;
 
 		Id = Guid.NewGuid();
