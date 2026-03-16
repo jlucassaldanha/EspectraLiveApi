@@ -6,3 +6,9 @@ public record TwitchRefreshTokenResponse(
     List<string> Scope,
     string TokenType
 );
+
+public record TwitchRefreshTokenError(
+    string Error,
+    int Status,
+    string Message
+);

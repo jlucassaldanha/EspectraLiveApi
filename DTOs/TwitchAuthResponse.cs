@@ -6,4 +6,10 @@ public record TwitchAuthResponse(
     string RefreshToken,
     List<string> Scope,
     string TokenType
-    );
+);
+
+public record TwitchAuthError(
+    string Error,
+    int Status,
+    string Message
+);
