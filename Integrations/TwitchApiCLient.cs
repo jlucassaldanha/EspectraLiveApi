@@ -16,22 +16,28 @@ public class TwitchApiClient
 		_options = options;
 	}
 
-	public async Task<TwitchUserResponse?> GetUserProfile(string accessToken, string clientId)
+	public async Task<Result<TwitchUserData, TwitchUserError>> GetUserProfile(string accessToken)
 	{
 		var request = new HttpRequestMessage(HttpMethod.Get, "users");
 		request.Headers.Add("Authorization", $"Bearer {accessToken}");
-		request.Headers.Add("Client-Id", clientId);
+		request.Headers.Add("Client-Id", _options.Value.ClientId);
 
 		var response = await _httpClient.SendAsync(request);
 
 		if (!response.IsSuccessStatusCode)
 		{
-			return null;
+			return new Result<TwitchUserData, TwitchUserError> { Error = new TwitchUserError(400, "Erro ao fazer request para a Twitch.") };
 		}
 
 		var result = await response.Content.ReadFromJsonAsync<TwitchUserResponse>();
 
-		return result?.Data.FirstOrDefault();
+		if (result == null)
+		{
+			return new Result<TwitchUserData, TwitchUserError> { Error = new TwitchUserError(404, "Usuário não encontrado.") };
+		}
+
+		var userData = result.Data.First();
+
+		return new Result<TwitchUserData, TwitchUserError> { Success = userData };
 	}
-	
 }

@@ -9,13 +9,15 @@ namespace SpectraLiveApi.Services;
 public class AuthService
 {
 	private readonly TwitchAuthClient _twitchAuth;
+	private readonly TwitchApiClient _twitchApi;
 	private readonly string _apiUrl;
 	private readonly IMemoryCache _cache;
 	private readonly IUserRepository _userRepository;
 
-	public AuthService(TwitchAuthClient twitchAuth, IMemoryCache cache, IOptions<SpectraLiveSettings> options, IUserRepository userRepository)
+	public AuthService(TwitchAuthClient twitchAuth, TwitchApiClient twitchApi, IMemoryCache cache, IOptions<SpectraLiveSettings> options, IUserRepository userRepository)
 	{
 		_twitchAuth = twitchAuth;
+		_twitchApi = twitchApi;
 		_apiUrl = options.Value.ApiUrl;
 		_cache = cache;
 		_userRepository = userRepository;
@@ -62,8 +64,11 @@ public class AuthService
 
 		string userToken = sessionData.AccessToken;
 
-		return null;
 		// Faz a requisição pra api
+		var userData = await _twitchApi.GetUserProfile(userToken);
+
+		return null;
+		
 
 		// Verifica se precisa de um refresh
 
