@@ -39,7 +39,7 @@ public static class AuthEndpoints
 				return Results.BadRequest(new { Error = "Erro inesperado em callback" });
 
 			context.Response.Cookies.Append(
-				"sessionToken", 
+				"SessionToken", 
 				sessionResponse.Success.SessionToken, 
 				new CookieOptions
 				{
@@ -63,15 +63,28 @@ public static class AuthEndpoints
 			
 			if (authToken == null && sessionToken != null)
 			{
-				await authService.GetUserInformationWithSession();
+				var userData = await authService.GetUserInformationWithSession(sessionToken);
 				
+				if (userData.Error != null)
+					return Results.BadRequest(userData.Error.Message);
+				
+				if (userData.Success == null)
+					return Results.BadRequest(new { Error = "Erro inesperado ao tentar buscar informações do usuário." });
+
+				// Cria jwt
+					
 				context.Response.Cookies.Delete("SessionToken");
+
+				return Results.Ok(userData);
 			}
 
 			if (sessionToken == null && authToken != null)
 			{
 				await authService.GetUserInformationWithJwt();
+				return Results.Ok();
 			}
+
+			return Results.Ok();
 
 			
 		});

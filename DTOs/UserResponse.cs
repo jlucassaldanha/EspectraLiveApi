@@ -1,13 +1,14 @@
-using System.Text.Json.Serialization;
-
 namespace SpectraLiveApi.DTOs;
 
-public record TwitchUserData(
-	string Id, 
+public record UserData(
+	string AccessToken,
+	string RefreshToken,
+	int ExpiresIn,
+	string TwitchId,
 	string Login, 
-	[property: JsonPropertyName("display_name")] string DisplayName, 
-	[property: JsonPropertyName("profile_img_url")] string ProfileImgUrl
+	string DisplayName, 
+	string ProfileImgUrl,
+	Guid Id
 );
-public record TwitchUserResponse(List<TwitchUserData> Data );
 
-public record TwitchUserError(int Status, string Message);
+public record UserError( string Message);

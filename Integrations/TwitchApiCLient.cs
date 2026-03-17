@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Options;
 using SpectraLiveApi.DTOs;
@@ -25,16 +26,12 @@ public class TwitchApiClient
 		var response = await _httpClient.SendAsync(request);
 
 		if (!response.IsSuccessStatusCode)
-		{
-			return new Result<TwitchUserData, TwitchUserError> { Error = new TwitchUserError(400, "Erro ao fazer request para a Twitch.") };
-		}
+			return new Result<TwitchUserData, TwitchUserError> { Error = new TwitchUserError(response.StatusCode, "Erro ao fazer request para a Twitch.") };
 
 		var result = await response.Content.ReadFromJsonAsync<TwitchUserResponse>();
 
 		if (result == null)
-		{
-			return new Result<TwitchUserData, TwitchUserError> { Error = new TwitchUserError(404, "Usuário não encontrado.") };
-		}
+			return new Result<TwitchUserData, TwitchUserError> { Error = new TwitchUserError(HttpStatusCode.BadRequest, "Usuário não encontrado.") };
 
 		var userData = result.Data.First();
 

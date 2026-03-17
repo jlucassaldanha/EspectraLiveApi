@@ -13,7 +13,7 @@ public class UserRepository : IUserRepository
 		_db = db;
 	}
 
-	public async Task<User?> GetByTwitchIdAsync(string twitchId)
+	public async Task<User?> GetProfileByTwitchIdAsync(string twitchId)
 	{
 		return await _db.Users.FirstOrDefaultAsync(u => u.TwitchId == twitchId);
 	}

@@ -1,7 +1,9 @@
+using System.Net;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using SpectraLiveApi.DTOs;
 using SpectraLiveApi.Integrations;
+using SpectraLiveApi.Models;
 using SpectraLiveApi.Repositories;
 
 namespace SpectraLiveApi.Services;
@@ -30,14 +32,9 @@ public class AuthService
 		var authData = await _twitchAuth.GetAuthToken(code, redirectUri);
 
 		if (authData.Error != null)
-		{
 			return new Result<TempSessionToken, TempSessionError> { Error = new TempSessionError(authData.Error.Message) };
-		}
-
 		if (authData.Success == null)
-		{
-			return new Result<TempSessionToken, TempSessionError> { Error = new TempSessionError("Resposta inesperada da Twitch") };
-		} 
+			return new Result<TempSessionToken, TempSessionError> { Error = new TempSessionError("Resposta inesperada da Twitch") }; 
 
 		var sessionToken = Guid.NewGuid().ToString();
 		
@@ -52,30 +49,64 @@ public class AuthService
 		return new Result<TempSessionToken, TempSessionError> { Success = new TempSessionToken(sessionToken) };
 	}
 
-	public async Task<Result<TwitchUserResponse, TempSessionError>> GetUserInformationWithSession(string sessionToken)
+	public async Task<Result<UserData, UserError>> GetUserInformationWithSession(string sessionToken)
 	{
-		// Aqui vai pegar os dados e salvar
 		var sessionData = _cache.Get<TempSessionData>(sessionToken);
 
 		if (sessionData == null)
+			return new Result<UserData, UserError> { Error = new UserError("Sessão inválida ou expirada. Faça login novamente.") };
+
+		string accessToken = sessionData.AccessToken;
+
+		var response = await _twitchApi.GetUserProfile(accessToken);
+
+		if (response.Error != null)
+			return new Result<UserData, UserError> { Error = new UserError(response.Error.Message) };
+		if (response.Success == null)
+			return new Result<UserData, UserError> { Error = new UserError("Erro inesperado ao buscar usuário na Twitch") };
+		
+		User freshUser;
+
+		var userDataFromTwitchResponse = response.Success;
+		var userDataFromDb = await _userRepository.GetProfileByTwitchIdAsync(userDataFromTwitchResponse.Id);
+		
+		if (userDataFromDb == null)
 		{
-			return new Result<TwitchUserResponse, TempSessionError> { Error = new TempSessionError("Sessão inválida ou expirada. Faça login novamente.") };
+			freshUser = new User(
+				sessionData.AccessToken, 
+				sessionData.RefreshToken,
+				sessionData.ExpiresIn,
+				userDataFromTwitchResponse.Id,
+				userDataFromTwitchResponse.Login,
+				userDataFromTwitchResponse.DisplayName,
+				userDataFromTwitchResponse.ProfileImgUrl
+			);
+
+			await _userRepository.AddAsync(freshUser);
+		}
+		else
+		{
+			userDataFromDb.AccessToken = sessionData.AccessToken;
+			userDataFromDb.RefreshToken = sessionData.RefreshToken;
+			userDataFromDb.ExpiresIn = sessionData.ExpiresIn;
+
+			freshUser = userDataFromDb;
+
+			await _userRepository.UpdateAsync(freshUser);
 		}
 
-		string userToken = sessionData.AccessToken;
+		var newUserData = new UserData(
+			freshUser.AccessToken, 
+			freshUser.RefreshToken,
+			freshUser.ExpiresIn,
+			freshUser.TwitchId,
+			freshUser.Login,
+			freshUser.DisplayName,
+			freshUser.ProfileImgUrl,
+			freshUser.Id
+		);
 
-		// Faz a requisição pra api
-		var userData = await _twitchApi.GetUserProfile(userToken);
-
-		return null;
-		
-
-		// Verifica se precisa de um refresh
-
-		// Verifica se deu ruim
-
-		// Dado retornado
-		
+		return new Result<UserData, UserError> { Success = newUserData };
 	}
 
 	public async Task GetUserInformationWithJwt()
