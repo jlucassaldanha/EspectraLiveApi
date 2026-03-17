@@ -22,7 +22,7 @@ public static class AuthEndpoints
 			return Results.Redirect(twitchAuthUrl);
 		});
 
-		group.MapGet("/callback", async (HttpContext context, IConfiguration config, AuthService authService, string code, string? error) =>
+		group.MapGet("/callback", async (HttpContext context, AuthService authService, string code, string? error) =>
 		{
 			if (error != null) return Results.Unauthorized();
 
@@ -43,10 +43,8 @@ public static class AuthEndpoints
 					Expires = DateTimeOffset.UtcNow.AddMinutes(5)
 				}
 			);
-			
-			var frontendUrl = config["SpectraLive:FrontendUrl"];
 	
-			return Results.Redirect(config["SpectraLive:FrontendUrl"] + "/dashboard");
+			return Results.Ok(new { message = "SessionToken gravado com sucesso."});
 		});
 
 		group.MapGet("/me", async (HttpContext context, AuthService authService, JwtService jwtService) =>
@@ -99,6 +97,12 @@ public static class AuthEndpoints
 			}
 
 			return Results.Ok(userData);
+		});
+
+		group.MapGet("/logout", (HttpContext context) => {
+			context.Response.Cookies.Delete("SessionToken");
+			context.Response.Cookies.Delete("AuthToken");
+			Results.Ok(new { message = "Logout realizado com sucesso."});
 		});
 	}
 }
