@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using SpectraLiveApi.Data;
 using SpectraLiveApi.DTOs;
 using SpectraLiveApi.Endpoints;
 using SpectraLiveApi.Integrations;
@@ -5,6 +7,9 @@ using SpectraLiveApi.Repositories;
 using SpectraLiveApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+//builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite("Data Source:spectralive.db"));
 
 var frontendUrl = builder.Configuration["SpectraLive:FrontendUrl"] ?? "http://localhost:8000";
 
