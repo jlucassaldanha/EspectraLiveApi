@@ -1,4 +1,3 @@
-using System.Net;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using SpectraLiveApi.DTOs;
@@ -13,15 +12,17 @@ public class AuthService
 	private readonly TwitchAuthClient _twitchAuth;
 	private readonly TwitchApiClient _twitchApi;
 	private readonly string _apiUrl;
+	private readonly JwtService _jwtService;
 	private readonly IMemoryCache _cache;
 	private readonly IUserRepository _userRepository;
 
-	public AuthService(TwitchAuthClient twitchAuth, TwitchApiClient twitchApi, IMemoryCache cache, IOptions<SpectraLiveSettings> options, IUserRepository userRepository)
+	public AuthService(TwitchAuthClient twitchAuth, TwitchApiClient twitchApi, IMemoryCache cache, IOptions<SpectraLiveSettings> options, IUserRepository userRepository, JwtService jwtService)
 	{
 		_twitchAuth = twitchAuth;
 		_twitchApi = twitchApi;
 		_apiUrl = options.Value.ApiUrl;
 		_cache = cache;
+		_jwtService = jwtService;
 		_userRepository = userRepository;
 	}
 
@@ -111,11 +112,34 @@ public class AuthService
 		return new Result<UserData, UserError> { Success = newUserData };
 	}
 
-	public async Task GetUserInformationWithJwt()
+	public async Task<Result<UserData, UserError>> GetUserInformationWithJwt(string authToken)
 	{
-		// Decodifica o jwt
-		// Pesquisa o usuario
-		// Retorna os dados
-		// Aqui só vai pegar os dados
+		var claims = _jwtService.ValidateToken(authToken);
+		if (claims == null)
+			return new Result<UserData, UserError> { Error = new UserError("JWT inválido") };
+
+		var twitchUserId = claims.FindFirst("TwitchId")?.Value;
+		var userId = claims.FindFirst("UserId")?.Value;
+		
+		if (string.IsNullOrEmpty(twitchUserId) || string.IsNullOrEmpty(userId))
+			return new Result<UserData, UserError> { Error = new UserError("Chaves de usuário não encontradas no JWT") };
+		
+		var userDataFromDb = await _userRepository.GetProfileByTwitchIdAsync(twitchUserId);
+
+		if (userDataFromDb == null)
+			return new Result<UserData, UserError> { Error = new UserError("Usuário não encontrado no banco de dados.") };
+
+		var userData = new UserData(
+			userDataFromDb.AccessToken, 
+			userDataFromDb.RefreshToken,
+			userDataFromDb.ExpiresIn,
+			userDataFromDb.TwitchId,
+			userDataFromDb.Login,
+			userDataFromDb.DisplayName,
+			userDataFromDb.ProfileImgUrl,
+			userDataFromDb.Id
+		);
+
+		return new Result<UserData, UserError> { Success = userData };
 	}
 }

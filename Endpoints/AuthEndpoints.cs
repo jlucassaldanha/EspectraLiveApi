@@ -1,8 +1,5 @@
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using SpectraLiveApi.DTOs;
-using SpectraLiveApi.Integrations;
-using SpectraLiveApi.Repositories;
 using SpectraLiveApi.Services;
 
 namespace SpectraLiveApi.Endpoints;
@@ -38,10 +35,7 @@ public static class AuthEndpoints
 			if (sessionResponse.Success == null)
 				return Results.BadRequest(new { Error = "Erro inesperado em callback" });
 
-			context.Response.Cookies.Append(
-				"SessionToken", 
-				sessionResponse.Success.SessionToken, 
-				new CookieOptions
+			context.Response.Cookies.Append("SessionToken",  sessionResponse.Success.SessionToken, new CookieOptions
 				{
 					HttpOnly = true,
 					Secure = true,
@@ -59,45 +53,52 @@ public static class AuthEndpoints
 		{
 			context.Request.Cookies.TryGetValue("SessionToken", out var sessionToken);
 			context.Request.Cookies.TryGetValue("AuthToken", out var authToken);
-
 			
-			if (authToken == null && sessionToken != null)
+			UserData userData;
+
+			if (sessionToken != null)
 			{
-				var userData = await authService.GetUserInformationWithSession(sessionToken);
+				var result = await authService.GetUserInformationWithSession(sessionToken);
 				
-				if (userData.Error != null)
-					return Results.BadRequest(userData.Error.Message);
+				if (result.Error != null)
+					return Results.BadRequest(result.Error.Message);
 				
-				if (userData.Success == null)
+				if (result.Success == null)
 					return Results.BadRequest(new { Error = "Erro inesperado ao tentar buscar informações do usuário." });
 
-				var newAuthToken = jwtService.GenerateToken(userData.Success.Id.ToString(), userData.Success.TwitchId);
+				userData = result.Success;
 
-				context.Response.Cookies.Append(
-					"AuthToken",
-					newAuthToken,
-					new CookieOptions
+				var newAuthToken = jwtService.GenerateToken(userData.Id.ToString(), userData.TwitchId);
+				
+				context.Response.Cookies.Delete("SessionToken");
+
+				context.Response.Cookies.Append("AuthToken", newAuthToken, new CookieOptions
 					{
 						HttpOnly = true,
 						Secure = true,
-						SameSite = SameSiteMode.None
+						SameSite = SameSiteMode.None,
+						Expires = DateTimeOffset.UtcNow.AddDays(7)
 					}
 				);
-					
-				context.Response.Cookies.Delete("SessionToken");
-
-				return Results.Ok(userData);
 			}
-
-			if (sessionToken == null && authToken != null)
+			else if (sessionToken == null && authToken != null)
 			{
-				await authService.GetUserInformationWithJwt();
-				return Results.Ok();
+				var result = await authService.GetUserInformationWithJwt(authToken);
+
+				if (result.Error != null)
+					return Results.BadRequest(result.Error.Message);
+				
+				if (result.Success == null)
+					return Results.BadRequest(new { Error = "Erro inesperado ao tentar buscar informações do usuário." });
+
+				userData = result.Success;
+			}
+			else
+			{
+				return Results.Unauthorized();
 			}
 
-			return Results.Ok();
-
-			
+			return Results.Ok(userData);
 		});
 	}
 }
