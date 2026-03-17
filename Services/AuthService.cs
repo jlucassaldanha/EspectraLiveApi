@@ -105,6 +105,8 @@ public class AuthService
 			freshUser.ProfileImgUrl,
 			freshUser.Id
 		);
+		
+		_cache.Remove(sessionToken);
 
 		return new Result<UserData, UserError> { Success = newUserData };
 	}

@@ -34,6 +34,7 @@ builder.Services.AddHttpClient<TwitchApiClient>((HttpClient client) =>
     client.BaseAddress = new Uri("https://api.twitch.tv/helix/");
 });
 
+builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<AuthService>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();

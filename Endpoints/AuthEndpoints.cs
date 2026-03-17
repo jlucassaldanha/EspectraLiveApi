@@ -55,7 +55,7 @@ public static class AuthEndpoints
 			return Results.Redirect(config["SpectraLive:FrontendUrl"] + "/dashboard");
 		});
 
-		group.MapGet("/me", async (HttpContext context, AuthService authService) =>
+		group.MapGet("/me", async (HttpContext context, AuthService authService, JwtService jwtService) =>
 		{
 			context.Request.Cookies.TryGetValue("SessionToken", out var sessionToken);
 			context.Request.Cookies.TryGetValue("AuthToken", out var authToken);
@@ -71,7 +71,18 @@ public static class AuthEndpoints
 				if (userData.Success == null)
 					return Results.BadRequest(new { Error = "Erro inesperado ao tentar buscar informações do usuário." });
 
-				// Cria jwt
+				var newAuthToken = jwtService.GenerateToken(userData.Success.Id.ToString(), userData.Success.TwitchId);
+
+				context.Response.Cookies.Append(
+					"AuthToken",
+					newAuthToken,
+					new CookieOptions
+					{
+						HttpOnly = true,
+						Secure = true,
+						SameSite = SameSiteMode.None
+					}
+				);
 					
 				context.Response.Cookies.Delete("SessionToken");
 
