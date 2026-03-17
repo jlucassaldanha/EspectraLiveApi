@@ -17,7 +17,6 @@ public class TwitchAuthClient
 
 	public async Task<Result<TwitchAuthResponse, TwitchAuthError>> GetAuthToken(string code, string redirectUri)
 	{
-
 		var data = new Dictionary<string, string>
 		{ 
 			{"client_id", _options.Value.ClientId}, 

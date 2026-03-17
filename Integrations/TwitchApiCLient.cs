@@ -9,24 +9,30 @@ namespace SpectraLiveApi.Integrations;
 public class TwitchApiClient
 {
 	private readonly HttpClient _httpClient;
-	private readonly IOptions<TwitchSettings> _options;
+	//private readonly IOptions<TwitchSettings> _options;
+	private readonly string _clientId;
 
 	public TwitchApiClient(HttpClient httpClient, IOptions<TwitchSettings> options)
 	{
 		_httpClient = httpClient;
-		_options = options;
+		_clientId = options.Value.ClientId;
 	}
 
 	public async Task<Result<TwitchUserData, TwitchUserError>> GetUserProfile(string accessToken)
 	{
 		var request = new HttpRequestMessage(HttpMethod.Get, "users");
+
 		request.Headers.Add("Authorization", $"Bearer {accessToken}");
-		request.Headers.Add("Client-Id", _options.Value.ClientId);
+		request.Headers.Add("Client-Id", _clientId);
 
 		var response = await _httpClient.SendAsync(request);
 
 		if (!response.IsSuccessStatusCode)
-			return new Result<TwitchUserData, TwitchUserError> { Error = new TwitchUserError(response.StatusCode, "Erro ao fazer request para a Twitch.") };
+		{
+            Console.WriteLine($"Erro Twitch: {await response.Content.ReadAsStringAsync()}");
+
+			return new Result<TwitchUserData, TwitchUserError> { Error = new TwitchUserError(response.StatusCode, response.ReasonPhrase ?? "Erro ao fazer request para a Twitch.") };
+		}
 
 		var result = await response.Content.ReadFromJsonAsync<TwitchUserResponse>();
 
