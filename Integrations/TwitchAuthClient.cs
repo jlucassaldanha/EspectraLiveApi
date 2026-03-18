@@ -3,6 +3,7 @@ using SpectraLiveApi.DTOs;
 using SpectraLiveApi.Common;
 using SpectraLiveApi.Settings;
 using SpectraLiveApi.DTOs.Twitch;
+using System.Net;
 
 namespace SpectraLiveApi.Integrations;
 
@@ -39,11 +40,10 @@ public class TwitchAuthClient
 		}
 		else
 		{
-			var authError = await response.Content.ReadFromJsonAsync<TwitchErrorResponse>();
-			
+			var authError = await response.Content.ReadFromJsonAsync<TwitchErrorResponse>();	
 			var errorMessage = authError?.Message ?? authError?.Error ?? "Erro desconhecido.";
-			
-			return Result<TwitchAuthResponse>.Failure(new Error(errorMessage));
+
+			return Result<TwitchAuthResponse>.Failure(new Error(errorMessage, response.StatusCode));
 		}
 	}
 
@@ -69,10 +69,9 @@ public class TwitchAuthClient
 		else
 		{
 			var refreshTokenError = await response.Content.ReadFromJsonAsync<TwitchErrorResponse>();
-			
 			var errorMessage = refreshTokenError?.Message ?? refreshTokenError?.Error ?? "Erro desconhecido.";
 			
-			return Result<TwitchRefreshTokenResponse>.Failure(new Error(errorMessage));
+			return Result<TwitchRefreshTokenResponse>.Failure(new Error(errorMessage, response.StatusCode));
 		}
 	}
 }

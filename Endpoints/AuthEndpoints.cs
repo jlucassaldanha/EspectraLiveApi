@@ -3,6 +3,7 @@ using SpectraLiveApi.Common.Models;
 using SpectraLiveApi.Settings;
 using SpectraLiveApi.Services;
 using SpectraLiveApi.DTOs.Users;
+using System.Net;
 
 namespace SpectraLiveApi.Endpoints;
 
@@ -31,11 +32,13 @@ public static class AuthEndpoints
 			var sessionResponse = await authService.GetSessionWithTwitchCode(code);
 
 			if (sessionResponse.Error != null)
-				return Results.BadRequest(new { Error = sessionResponse.Error.Message });
-			
+				return Results.Problem(
+					detail: sessionResponse.Error.Message, 
+					statusCode: (int)sessionResponse.Error.ErrorCode
+				);
 
 			if (sessionResponse.Data == null)
-				return Results.BadRequest(new { Error = "Erro inesperado em callback" });
+				return Results.InternalServerError(new { Error = "Erro inesperado em callback" });
 
 			context.Response.Cookies.Append("sessionToken",  sessionResponse.Data.SessionToken, new CookieOptions
 				{
@@ -61,10 +64,13 @@ public static class AuthEndpoints
 				var result = await authService.GetUserInformationWithSession(sessionToken);
 				
 				if (result.Error != null)
-					return Results.BadRequest(result.Error.Message);
+					return Results.Problem(
+						detail: result.Error.Message,
+						statusCode: (int)result.Error.ErrorCode
+					);
 				
 				if (result.Data == null)
-					return Results.BadRequest(new { Error = "Erro inesperado ao tentar buscar informações do usuário." });
+					return Results.InternalServerError(new { Error = "Erro inesperado ao tentar buscar informações do usuário." });
 
 				userData = result.Data;
 
@@ -86,10 +92,13 @@ public static class AuthEndpoints
 				var result = await authService.GetUserInformationWithJwt(authToken);
 
 				if (result.Error != null)
-					return Results.BadRequest(result.Error.Message);
+					return Results.Problem(
+						detail: result.Error.Message,
+						statusCode: (int)result.Error.ErrorCode
+					);
 				
 				if (result.Data == null)
-					return Results.BadRequest(new { Error = "Erro inesperado ao tentar buscar informações do usuário." });
+					return Results.InternalServerError(new { Error = "Erro inesperado ao tentar buscar informações do usuário." });
 
 				userData = result.Data;
 			}

@@ -6,6 +6,7 @@ using SpectraLiveApi.Settings;
 using SpectraLiveApi.Integrations;
 using SpectraLiveApi.Repositories;
 using SpectraLiveApi.Entities;
+using System.Net;
 
 namespace SpectraLiveApi.Services;
 
@@ -35,9 +36,9 @@ public class AuthService
 		var authData = await _twitchAuth.GetAuthToken(code, redirectUri);
 
 		if (authData.Error != null)
-			return Result<TempSessionToken>.Failure(new Error(authData.Error.Message));
+			return Result<TempSessionToken>.Failure(new Error(authData.Error.Message, authData.Error.ErrorCode));
 		if (authData.Data == null)
-			return Result<TempSessionToken>.Failure(new Error("Resposta inesperada da Twitch")); 
+			return Result<TempSessionToken>.Failure(new Error("Resposta inesperada da Twitch", HttpStatusCode.InternalServerError)); 
 
 		var sessionToken = Guid.NewGuid().ToString();
 		
@@ -57,16 +58,16 @@ public class AuthService
 		var sessionData = _cache.Get<TempSessionData>(sessionToken);
 
 		if (sessionData == null)
-			return Result<UserData>.Failure(new Error("Sessão inválida ou expirada. Faça login novamente."));
+			return Result<UserData>.Failure(new Error("Sessão inválida ou expirada. Faça login novamente.", HttpStatusCode.Unauthorized));
 
 		string accessToken = sessionData.AccessToken;
 
 		var response = await _twitchApi.GetUserProfile(accessToken);
 
 		if (response.Error != null)
-			return Result<UserData>.Failure(new Error(response.Error.Message));
+			return Result<UserData>.Failure(new Error(response.Error.Message, response.Error.ErrorCode));
 		if (response.Data == null)
-			return Result<UserData>.Failure(new Error("Erro inesperado ao buscar usuário na Twitch"));
+			return Result<UserData>.Failure(new Error("Erro inesperado ao buscar usuário na Twitch", HttpStatusCode.InternalServerError));
 		
 		User freshUser;
 		var userDataFromTwitchResponse = response.Data;
@@ -117,18 +118,18 @@ public class AuthService
 	{
 		var claims = _jwtService.ValidateToken(authToken);
 		if (claims == null)
-			return Result<UserData>.Failure(new Error("JWT inválido"));
+			return Result<UserData>.Failure(new Error("JWT inválido", HttpStatusCode.Unauthorized));
 
 		var twitchUserId = claims.FindFirst("twitchId")?.Value;
 		var userId = claims.FindFirst("userId")?.Value;
 		
 		if (string.IsNullOrEmpty(twitchUserId) || string.IsNullOrEmpty(userId))
-			return Result<UserData>.Failure(new ("Chaves de usuário não encontradas no JWT"));
+			return Result<UserData>.Failure(new ("Chaves de usuário não encontradas no JWT", HttpStatusCode.Unauthorized));
 		
 		User? userDataFromDb = await _userRepository.GetProfileByTwitchIdAsync(twitchUserId);
 
 		if (userDataFromDb == null)
-			return Result<UserData>.Failure(new ("Usuário não encontrado no banco de dados."));
+			return Result<UserData>.Failure(new ("Usuário não encontrado no banco de dados.", HttpStatusCode.NotFound));
 
 		var userData = new UserData(
 			userDataFromDb.AccessToken, 

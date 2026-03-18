@@ -1,6 +1,8 @@
+using System.Net;
+
 namespace SpectraLiveApi.Common;
 
-public record Error(string Message, string Code = "BadRequest");
+public record Error(string Message, HttpStatusCode ErrorCode = HttpStatusCode.BadRequest);
 
 public record Result<T>
 {
