@@ -1,8 +1,8 @@
 using System.Net;
-using System.Net.Http.Json;
 using Microsoft.Extensions.Options;
-using SpectraLiveApi.DTOs;
-using SpectraLiveApi.Models;
+using SpectraLiveApi.DTOs.Twitch;
+using SpectraLiveApi.Common;
+using SpectraLiveApi.Settings;
 
 namespace SpectraLiveApi.Integrations;
 
@@ -18,7 +18,7 @@ public class TwitchApiClient
 		_clientId = options.Value.ClientId;
 	}
 
-	public async Task<Result<TwitchUserData, TwitchUserError>> GetUserProfile(string accessToken)
+	public async Task<Result<TwitchUserData, TwitchUserResponse>> GetUserProfile(string accessToken)
 	{
 		var request = new HttpRequestMessage(HttpMethod.Get, "users");
 
@@ -31,16 +31,16 @@ public class TwitchApiClient
 		{
             Console.WriteLine($"Erro Twitch: {await response.Content.ReadAsStringAsync()}");
 
-			return new Result<TwitchUserData, TwitchUserError> { Error = new TwitchUserError(response.StatusCode, response.ReasonPhrase ?? "Erro ao fazer request para a Twitch.") };
+			return new Result<TwitchUserData, TwitchUserResponse> { Error = new TwitchUserResponse(response.StatusCode, response.ReasonPhrase ?? "Erro ao fazer request para a Twitch.") };
 		}
 
-		var result = await response.Content.ReadFromJsonAsync<TwitchUserResponse>();
+		var result = await response.Content.ReadFromJsonAsync<TwitchUserRequest>();
 
 		if (result == null)
-			return new Result<TwitchUserData, TwitchUserError> { Error = new TwitchUserError(HttpStatusCode.BadRequest, "Usuário não encontrado.") };
+			return new Result<TwitchUserData, TwitchUserResponse> { Error = new TwitchUserResponse(HttpStatusCode.BadRequest, "Usuário não encontrado.") };
 
 		var userData = result.Data.First();
 
-		return new Result<TwitchUserData, TwitchUserError> { Success = userData };
+		return new Result<TwitchUserData, TwitchUserResponse> { Success = userData };
 	}
 }

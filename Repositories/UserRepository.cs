@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SpectraLiveApi.Data;
-using SpectraLiveApi.Models;
+using SpectraLiveApi.Entities;
 
 namespace SpectraLiveApi.Repositories;
 

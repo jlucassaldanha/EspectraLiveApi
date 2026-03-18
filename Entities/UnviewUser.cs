@@ -1,4 +1,4 @@
-namespace SpectraLiveApi.Models;
+namespace SpectraLiveApi.Entities;
 
 public class UnviewUser
 {

@@ -1,4 +1,4 @@
-using SpectraLiveApi.Models;
+using SpectraLiveApi.Entities;
 
 namespace SpectraLiveApi.Repositories;
 

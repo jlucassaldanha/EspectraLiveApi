@@ -1,7 +1,6 @@
-using System.Net;
 using System.Text.Json.Serialization;
 
-namespace SpectraLiveApi.DTOs;
+namespace SpectraLiveApi.DTOs.Twitch;
 
 public record TwitchUserData(
 	string Id, 
@@ -9,6 +8,4 @@ public record TwitchUserData(
 	[property: JsonPropertyName("display_name")] string DisplayName, 
 	[property: JsonPropertyName("profile_image_url")] string ProfileImgUrl
 );
-public record TwitchUserResponse(List<TwitchUserData> Data );
-
-public record TwitchUserError(HttpStatusCode Status, string Message);
+public record TwitchUserRequest(List<TwitchUserData> Data );

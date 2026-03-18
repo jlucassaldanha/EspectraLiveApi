@@ -1,4 +1,4 @@
-namespace SpectraLiveApi.DTOs;
+namespace SpectraLiveApi.Common.Models;
 
 public record UserData(
 	string AccessToken,

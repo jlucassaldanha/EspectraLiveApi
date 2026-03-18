@@ -1,4 +1,4 @@
-namespace SpectraLiveApi.DTOs;
+namespace SpectraLiveApi.Common;
 
 public record Result<TSuccess, TError>
 {
@@ -6,4 +6,5 @@ public record Result<TSuccess, TError>
 	public TError? Error { get; init; }
 
 	public bool IsSuccess => Success != null;
+	public bool IsError => Error != null;
 }

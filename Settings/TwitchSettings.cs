@@ -1,4 +1,4 @@
-namespace SpectraLiveApi.DTOs;
+namespace SpectraLiveApi.Settings;
 
 public record TwitchSettings{
 	public string ClientId { get; init; } = string.Empty;

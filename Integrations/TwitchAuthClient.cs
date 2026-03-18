@@ -1,6 +1,8 @@
-using System.Net.Http.Json;
 using Microsoft.Extensions.Options;
 using SpectraLiveApi.DTOs;
+using SpectraLiveApi.Common;
+using SpectraLiveApi.Settings;
+using SpectraLiveApi.DTOs.Twitch;
 
 namespace SpectraLiveApi.Integrations;
 
@@ -15,7 +17,7 @@ public class TwitchAuthClient
 		_options = options;
 	}
 
-	public async Task<Result<TwitchAuthResponse, TwitchAuthError>> GetAuthToken(string code, string redirectUri)
+	public async Task<Result<TwitchAuthRequest, TwitchAuthResponse>> GetAuthToken(string code, string redirectUri)
 	{
 		var data = new Dictionary<string, string>
 		{ 
@@ -32,17 +34,17 @@ public class TwitchAuthClient
 
 		if (response.IsSuccessStatusCode)
 		{
-			var authResult = await response.Content.ReadFromJsonAsync<TwitchAuthResponse>();
-			return new Result<TwitchAuthResponse, TwitchAuthError> { Success = authResult };
+			var authResult = await response.Content.ReadFromJsonAsync<TwitchAuthRequest>();
+			return new Result<TwitchAuthRequest, TwitchAuthResponse> { Success = authResult };
 		}
 		else
 		{
-			var authError = await response.Content.ReadFromJsonAsync<TwitchAuthError>();
-			return new Result<TwitchAuthResponse, TwitchAuthError> { Error = authError };
+			var authError = await response.Content.ReadFromJsonAsync<TwitchAuthResponse>();
+			return new Result<TwitchAuthRequest, TwitchAuthResponse> { Error = authError };
 		}
 	}
 
-	public async Task<Result<TwitchRefreshTokenResponse, TwitchRefreshTokenError>> GetRefreshToken(string refreshToken)
+	public async Task<Result<TwitchRefreshTokenRequest, TwitchRefreshTokenResponse>> GetRefreshToken(string refreshToken)
 	{
 		var data = new Dictionary<string, string>
 		{ 
@@ -58,13 +60,13 @@ public class TwitchAuthClient
 
 		if (response.IsSuccessStatusCode)
 		{
-			var refreshTokenResult = await response.Content.ReadFromJsonAsync<TwitchRefreshTokenResponse>();
-			return new Result<TwitchRefreshTokenResponse, TwitchRefreshTokenError> { Success = refreshTokenResult };
+			var refreshTokenResult = await response.Content.ReadFromJsonAsync<TwitchRefreshTokenRequest>();
+			return new Result<TwitchRefreshTokenRequest, TwitchRefreshTokenResponse> { Success = refreshTokenResult };
 		}
 		else
 		{
-			var refreshTokenError = await response.Content.ReadFromJsonAsync<TwitchRefreshTokenError>();
-			return new Result<TwitchRefreshTokenResponse, TwitchRefreshTokenError> { Error = refreshTokenError };
+			var refreshTokenError = await response.Content.ReadFromJsonAsync<TwitchRefreshTokenResponse>();
+			return new Result<TwitchRefreshTokenRequest, TwitchRefreshTokenResponse> { Error = refreshTokenError };
 		}
 	}
 }

@@ -20,8 +20,8 @@ public class JwtService
 
 		var claims = new[]
 		{
-			new Claim("UserId", userId),
-			new Claim("TwitchId", twitchId)
+			new Claim("userId", userId),
+			new Claim("twitchId", twitchId)
 		};
 
 		var tokenDescriptor = new SecurityTokenDescriptor

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
-using SpectraLiveApi.DTOs;
+using SpectraLiveApi.Common.Models;
+using SpectraLiveApi.Settings;
 using SpectraLiveApi.Services;
 
 namespace SpectraLiveApi.Endpoints;
@@ -35,7 +36,7 @@ public static class AuthEndpoints
 			if (sessionResponse.Success == null)
 				return Results.BadRequest(new { Error = "Erro inesperado em callback" });
 
-			context.Response.Cookies.Append("SessionToken",  sessionResponse.Success.SessionToken, new CookieOptions
+			context.Response.Cookies.Append("sessionToken",  sessionResponse.Success.SessionToken, new CookieOptions
 				{
 					HttpOnly = true,
 					Secure = true,
@@ -44,13 +45,13 @@ public static class AuthEndpoints
 				}
 			);
 	
-			return Results.Ok(new { message = "SessionToken gravado com sucesso."});
+			return Results.Ok(new { message = "sessionToken gravado com sucesso."});
 		});
 
 		group.MapGet("/me", async (HttpContext context, AuthService authService, JwtService jwtService) =>
 		{
-			context.Request.Cookies.TryGetValue("SessionToken", out var sessionToken);
-			context.Request.Cookies.TryGetValue("AuthToken", out var authToken);
+			context.Request.Cookies.TryGetValue("sessionToken", out var sessionToken);
+			context.Request.Cookies.TryGetValue("authToken", out var authToken);
 			
 			UserData userData;
 
@@ -68,9 +69,9 @@ public static class AuthEndpoints
 
 				var newAuthToken = jwtService.GenerateToken(userData.Id.ToString(), userData.TwitchId);
 				
-				context.Response.Cookies.Delete("SessionToken");
+				context.Response.Cookies.Delete("sessionToken");
 
-				context.Response.Cookies.Append("AuthToken", newAuthToken, new CookieOptions
+				context.Response.Cookies.Append("authToken", newAuthToken, new CookieOptions
 					{
 						HttpOnly = true,
 						Secure = true,
@@ -100,8 +101,8 @@ public static class AuthEndpoints
 		});
 
 		group.MapGet("/logout", (HttpContext context) => {
-			context.Response.Cookies.Delete("SessionToken");
-			context.Response.Cookies.Delete("AuthToken");
+			context.Response.Cookies.Delete("sessionToken");
+			context.Response.Cookies.Delete("authToken");
 			Results.Ok(new { message = "Logout realizado com sucesso."});
 		});
 	}

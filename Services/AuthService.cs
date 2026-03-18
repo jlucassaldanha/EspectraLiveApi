@@ -1,9 +1,11 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
-using SpectraLiveApi.DTOs;
+using SpectraLiveApi.Common;
+using SpectraLiveApi.Common.Models;
+using SpectraLiveApi.Settings;
 using SpectraLiveApi.Integrations;
-using SpectraLiveApi.Models;
 using SpectraLiveApi.Repositories;
+using SpectraLiveApi.Entities;
 
 namespace SpectraLiveApi.Services;
 
@@ -118,13 +120,13 @@ public class AuthService
 		if (claims == null)
 			return new Result<UserData, UserError> { Error = new UserError("JWT inválido") };
 
-		var twitchUserId = claims.FindFirst("TwitchId")?.Value;
-		var userId = claims.FindFirst("UserId")?.Value;
+		var twitchUserId = claims.FindFirst("twitchId")?.Value;
+		var userId = claims.FindFirst("userId")?.Value;
 		
 		if (string.IsNullOrEmpty(twitchUserId) || string.IsNullOrEmpty(userId))
 			return new Result<UserData, UserError> { Error = new UserError("Chaves de usuário não encontradas no JWT") };
 		
-		var userDataFromDb = await _userRepository.GetProfileByTwitchIdAsync(twitchUserId);
+		User? userDataFromDb = await _userRepository.GetProfileByTwitchIdAsync(twitchUserId);
 
 		if (userDataFromDb == null)
 			return new Result<UserData, UserError> { Error = new UserError("Usuário não encontrado no banco de dados.") };
