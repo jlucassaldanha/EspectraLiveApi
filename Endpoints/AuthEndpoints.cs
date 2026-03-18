@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using SpectraLiveApi.Common.Models;
 using SpectraLiveApi.Settings;
 using SpectraLiveApi.Services;
+using SpectraLiveApi.DTOs.Users;
 
 namespace SpectraLiveApi.Endpoints;
 
@@ -97,7 +98,13 @@ public static class AuthEndpoints
 				return Results.Unauthorized();
 			}
 
-			return Results.Ok(userData);
+			var responseData = new UserResponse(
+				userData.DisplayName,
+				userData.ProfileImgUrl,
+				userData.Id
+			);
+
+			return Results.Ok(responseData);
 		});
 
 		group.MapGet("/logout", (HttpContext context) => {
