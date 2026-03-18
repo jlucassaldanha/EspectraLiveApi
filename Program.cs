@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SpectraLiveApi.Data;
-using SpectraLiveApi.DTOs;
+using SpectraLiveApi.Settings;
 using SpectraLiveApi.Endpoints;
 using SpectraLiveApi.Integrations;
 using SpectraLiveApi.Repositories;
