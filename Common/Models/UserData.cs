@@ -10,5 +10,3 @@ public record UserData(
 	string ProfileImgUrl,
 	Guid Id
 );
-
-public record UserError( string Message);

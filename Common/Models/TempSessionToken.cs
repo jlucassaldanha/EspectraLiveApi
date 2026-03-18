@@ -1,10 +1,6 @@
 namespace SpectraLiveApi.Common.Models;
 
-public record TempSessionToken(
-	string SessionToken
-);
-
-public record TempSessionError(string ErrorMessage);
+public record TempSessionToken(string SessionToken);
 
 public record TempSessionData(
 	string AccessToken,

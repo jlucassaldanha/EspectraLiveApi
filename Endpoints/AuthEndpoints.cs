@@ -30,13 +30,13 @@ public static class AuthEndpoints
 			var sessionResponse = await authService.GetSessionWithTwitchCode(code);
 
 			if (sessionResponse.Error != null)
-				return Results.BadRequest(new { Error = sessionResponse.Error.ErrorMessage });
+				return Results.BadRequest(new { Error = sessionResponse.Error.Message });
 			
 
-			if (sessionResponse.Success == null)
+			if (sessionResponse.Data == null)
 				return Results.BadRequest(new { Error = "Erro inesperado em callback" });
 
-			context.Response.Cookies.Append("sessionToken",  sessionResponse.Success.SessionToken, new CookieOptions
+			context.Response.Cookies.Append("sessionToken",  sessionResponse.Data.SessionToken, new CookieOptions
 				{
 					HttpOnly = true,
 					Secure = true,
@@ -62,10 +62,10 @@ public static class AuthEndpoints
 				if (result.Error != null)
 					return Results.BadRequest(result.Error.Message);
 				
-				if (result.Success == null)
+				if (result.Data == null)
 					return Results.BadRequest(new { Error = "Erro inesperado ao tentar buscar informações do usuário." });
 
-				userData = result.Success;
+				userData = result.Data;
 
 				var newAuthToken = jwtService.GenerateToken(userData.Id.ToString(), userData.TwitchId);
 				
@@ -87,10 +87,10 @@ public static class AuthEndpoints
 				if (result.Error != null)
 					return Results.BadRequest(result.Error.Message);
 				
-				if (result.Success == null)
+				if (result.Data == null)
 					return Results.BadRequest(new { Error = "Erro inesperado ao tentar buscar informações do usuário." });
 
-				userData = result.Success;
+				userData = result.Data;
 			}
 			else
 			{

@@ -9,38 +9,39 @@ namespace SpectraLiveApi.Integrations;
 public class TwitchApiClient
 {
 	private readonly HttpClient _httpClient;
-	//private readonly IOptions<TwitchSettings> _options;
-	private readonly string _clientId;
+	private readonly IOptions<TwitchSettings> _options;
 
 	public TwitchApiClient(HttpClient httpClient, IOptions<TwitchSettings> options)
 	{
 		_httpClient = httpClient;
-		_clientId = options.Value.ClientId;
+		_options = options;
 	}
 
-	public async Task<Result<TwitchUserData, TwitchUserResponse>> GetUserProfile(string accessToken)
+	public async Task<Result<TwitchUserData>> GetUserProfile(string accessToken)
 	{
 		var request = new HttpRequestMessage(HttpMethod.Get, "users");
 
 		request.Headers.Add("Authorization", $"Bearer {accessToken}");
-		request.Headers.Add("Client-Id", _clientId);
+		request.Headers.Add("Client-Id", _options.Value.ClientId);
 
 		var response = await _httpClient.SendAsync(request);
 
 		if (!response.IsSuccessStatusCode)
 		{
-            Console.WriteLine($"Erro Twitch: {await response.Content.ReadAsStringAsync()}");
+            var errorData = await response.Content.ReadFromJsonAsync<TwitchErrorResponse>();
 
-			return new Result<TwitchUserData, TwitchUserResponse> { Error = new TwitchUserResponse(response.StatusCode, response.ReasonPhrase ?? "Erro ao fazer request para a Twitch.") };
+			var errorMessage = errorData?.Message ?? errorData?.Error ?? response.ReasonPhrase ?? "Erro ao contatar a Twitch";
+			
+			return Result<TwitchUserData>.Failure(new Error(errorMessage));
 		}
 
-		var result = await response.Content.ReadFromJsonAsync<TwitchUserRequest>();
+		var result = await response.Content.ReadFromJsonAsync<TwitchUserResponse>();
 
 		if (result == null)
-			return new Result<TwitchUserData, TwitchUserResponse> { Error = new TwitchUserResponse(HttpStatusCode.BadRequest, "Usuário não encontrado.") };
+			return Result<TwitchUserData>.Failure(new Error("Usuário não encontrado."));
 
 		var userData = result.Data.First();
 
-		return new Result<TwitchUserData, TwitchUserResponse> { Success = userData };
+		return Result<TwitchUserData>.Success(userData);
 	}
 }

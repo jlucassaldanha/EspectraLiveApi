@@ -28,49 +28,48 @@ public class AuthService
 		_userRepository = userRepository;
 	}
 
-	public async Task<Result<TempSessionToken, TempSessionError>> GetSessionWithTwitchCode(string code)
+	public async Task<Result<TempSessionToken>> GetSessionWithTwitchCode(string code)
 	{
 		var redirectUri = $"{_apiUrl}/auth/callback";
 
 		var authData = await _twitchAuth.GetAuthToken(code, redirectUri);
 
 		if (authData.Error != null)
-			return new Result<TempSessionToken, TempSessionError> { Error = new TempSessionError(authData.Error.Message) };
-		if (authData.Success == null)
-			return new Result<TempSessionToken, TempSessionError> { Error = new TempSessionError("Resposta inesperada da Twitch") }; 
+			return Result<TempSessionToken>.Failure(new Error(authData.Error.Message));
+		if (authData.Data == null)
+			return Result<TempSessionToken>.Failure(new Error("Resposta inesperada da Twitch")); 
 
 		var sessionToken = Guid.NewGuid().ToString();
 		
 		var tempSession = new TempSessionData(
-			authData.Success.AccessToken,
-			authData.Success.RefreshToken,
-			authData.Success.ExpiresIn
+			authData.Data.AccessToken,
+			authData.Data.RefreshToken,
+			authData.Data.ExpiresIn
 		);
 
 		_cache.Set(sessionToken, tempSession, TimeSpan.FromMinutes(5));
 		
-		return new Result<TempSessionToken, TempSessionError> { Success = new TempSessionToken(sessionToken) };
+		return Result<TempSessionToken>.Success(new TempSessionToken(sessionToken));
 	}
 
-	public async Task<Result<UserData, UserError>> GetUserInformationWithSession(string sessionToken)
+	public async Task<Result<UserData>> GetUserInformationWithSession(string sessionToken)
 	{
 		var sessionData = _cache.Get<TempSessionData>(sessionToken);
 
 		if (sessionData == null)
-			return new Result<UserData, UserError> { Error = new UserError("Sessão inválida ou expirada. Faça login novamente.") };
+			return Result<UserData>.Failure(new Error("Sessão inválida ou expirada. Faça login novamente."));
 
 		string accessToken = sessionData.AccessToken;
 
 		var response = await _twitchApi.GetUserProfile(accessToken);
 
 		if (response.Error != null)
-			return new Result<UserData, UserError> { Error = new UserError(response.Error.Message) };
-		if (response.Success == null)
-			return new Result<UserData, UserError> { Error = new UserError("Erro inesperado ao buscar usuário na Twitch") };
+			return Result<UserData>.Failure(new Error(response.Error.Message));
+		if (response.Data == null)
+			return Result<UserData>.Failure(new Error("Erro inesperado ao buscar usuário na Twitch"));
 		
 		User freshUser;
-
-		var userDataFromTwitchResponse = response.Success;
+		var userDataFromTwitchResponse = response.Data;
 		var userDataFromDb = await _userRepository.GetProfileByTwitchIdAsync(userDataFromTwitchResponse.Id);
 		
 		if (userDataFromDb == null)
@@ -111,25 +110,25 @@ public class AuthService
 		
 		_cache.Remove(sessionToken);
 
-		return new Result<UserData, UserError> { Success = newUserData };
+		return Result<UserData>.Success(newUserData);
 	}
 
-	public async Task<Result<UserData, UserError>> GetUserInformationWithJwt(string authToken)
+	public async Task<Result<UserData>> GetUserInformationWithJwt(string authToken)
 	{
 		var claims = _jwtService.ValidateToken(authToken);
 		if (claims == null)
-			return new Result<UserData, UserError> { Error = new UserError("JWT inválido") };
+			return Result<UserData>.Failure(new Error("JWT inválido"));
 
 		var twitchUserId = claims.FindFirst("twitchId")?.Value;
 		var userId = claims.FindFirst("userId")?.Value;
 		
 		if (string.IsNullOrEmpty(twitchUserId) || string.IsNullOrEmpty(userId))
-			return new Result<UserData, UserError> { Error = new UserError("Chaves de usuário não encontradas no JWT") };
+			return Result<UserData>.Failure(new ("Chaves de usuário não encontradas no JWT"));
 		
 		User? userDataFromDb = await _userRepository.GetProfileByTwitchIdAsync(twitchUserId);
 
 		if (userDataFromDb == null)
-			return new Result<UserData, UserError> { Error = new UserError("Usuário não encontrado no banco de dados.") };
+			return Result<UserData>.Failure(new ("Usuário não encontrado no banco de dados."));
 
 		var userData = new UserData(
 			userDataFromDb.AccessToken, 
@@ -142,6 +141,6 @@ public class AuthService
 			userDataFromDb.Id
 		);
 
-		return new Result<UserData, UserError> { Success = userData };
+		return Result<UserData>.Success(userData);
 	}
 }

@@ -17,7 +17,7 @@ public class TwitchAuthClient
 		_options = options;
 	}
 
-	public async Task<Result<TwitchAuthRequest, TwitchAuthResponse>> GetAuthToken(string code, string redirectUri)
+	public async Task<Result<TwitchAuthResponse>> GetAuthToken(string code, string redirectUri)
 	{
 		var data = new Dictionary<string, string>
 		{ 
@@ -34,17 +34,20 @@ public class TwitchAuthClient
 
 		if (response.IsSuccessStatusCode)
 		{
-			var authResult = await response.Content.ReadFromJsonAsync<TwitchAuthRequest>();
-			return new Result<TwitchAuthRequest, TwitchAuthResponse> { Success = authResult };
+			var authResult = await response.Content.ReadFromJsonAsync<TwitchAuthResponse>();
+			return Result<TwitchAuthResponse>.Success(authResult!);
 		}
 		else
 		{
-			var authError = await response.Content.ReadFromJsonAsync<TwitchAuthResponse>();
-			return new Result<TwitchAuthRequest, TwitchAuthResponse> { Error = authError };
+			var authError = await response.Content.ReadFromJsonAsync<TwitchErrorResponse>();
+			
+			var errorMessage = authError?.Message ?? authError?.Error ?? "Erro desconhecido.";
+			
+			return Result<TwitchAuthResponse>.Failure(new Error(errorMessage));
 		}
 	}
 
-	public async Task<Result<TwitchRefreshTokenRequest, TwitchRefreshTokenResponse>> GetRefreshToken(string refreshToken)
+	public async Task<Result<TwitchRefreshTokenResponse>> GetRefreshToken(string refreshToken)
 	{
 		var data = new Dictionary<string, string>
 		{ 
@@ -60,13 +63,16 @@ public class TwitchAuthClient
 
 		if (response.IsSuccessStatusCode)
 		{
-			var refreshTokenResult = await response.Content.ReadFromJsonAsync<TwitchRefreshTokenRequest>();
-			return new Result<TwitchRefreshTokenRequest, TwitchRefreshTokenResponse> { Success = refreshTokenResult };
+			var refreshTokenResult = await response.Content.ReadFromJsonAsync<TwitchRefreshTokenResponse>();
+			return Result<TwitchRefreshTokenResponse>.Success(refreshTokenResult!);
 		}
 		else
 		{
-			var refreshTokenError = await response.Content.ReadFromJsonAsync<TwitchRefreshTokenResponse>();
-			return new Result<TwitchRefreshTokenRequest, TwitchRefreshTokenResponse> { Error = refreshTokenError };
+			var refreshTokenError = await response.Content.ReadFromJsonAsync<TwitchErrorResponse>();
+			
+			var errorMessage = refreshTokenError?.Message ?? refreshTokenError?.Error ?? "Erro desconhecido.";
+			
+			return Result<TwitchRefreshTokenResponse>.Failure(new Error(errorMessage));
 		}
 	}
 }
