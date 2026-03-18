@@ -46,7 +46,10 @@ var app = builder.Build();
 
 app.UseCors();
 app.UseExceptionHandler();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapAuthEndpoints();
+app.MapPrefsEndpoints();
 
 app.Run("http://localhost:8000");

@@ -3,7 +3,6 @@ using SpectraLiveApi.Common.Models;
 using SpectraLiveApi.Settings;
 using SpectraLiveApi.Services;
 using SpectraLiveApi.DTOs.Users;
-using System.Net;
 
 namespace SpectraLiveApi.Endpoints;
 
