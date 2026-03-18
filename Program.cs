@@ -1,9 +1,15 @@
-using SpectraLiveApi.DTOs;
+using Microsoft.EntityFrameworkCore;
+using SpectraLiveApi.Data;
+using SpectraLiveApi.Settings;
 using SpectraLiveApi.Endpoints;
 using SpectraLiveApi.Integrations;
+using SpectraLiveApi.Repositories;
 using SpectraLiveApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+//builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite("Data Source:spectra.db"));
 
 var frontendUrl = builder.Configuration["SpectraLive:FrontendUrl"] ?? "http://localhost:8000";
 
@@ -28,7 +34,15 @@ builder.Services.AddHttpClient<TwitchAuthClient>((HttpClient client) =>
     client.BaseAddress = new Uri("https://id.twitch.tv/oauth2/");
 });
 
+builder.Services.AddHttpClient<TwitchApiClient>((HttpClient client) => 
+{
+    client.BaseAddress = new Uri("https://api.twitch.tv/helix/");
+});
+
+builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<AuthService>();
+
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 var app = builder.Build();
 

@@ -1,4 +1,4 @@
-namespace SpectraLiveApi.DTOs;
+namespace SpectraLiveApi.Settings;
 
 public record SpectraLiveSettings{
 	public string ApiUrl { get; init; } = string.Empty;
