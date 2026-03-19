@@ -41,4 +41,20 @@ public class UserService
 
 		return Result<UserProfile>.Success(userProfile);
 	}
+
+	public async Task<Result<TwitchAuthData>> GetTwitchUserAuthData(string userId)
+	{
+		User? userProfileFromDb = await _userRepository.GetProfileByUserIdAsync(Guid.Parse(userId));
+
+		if (userProfileFromDb == null)
+			return Result<TwitchAuthData>.Failure(new ("Usuário não encontrado no banco de dados.", HttpStatusCode.NotFound));
+
+		var twitchAuthData = new TwitchAuthData(
+			userProfileFromDb.AccessToken,
+			userProfileFromDb.RefreshToken,
+			userProfileFromDb.ExpiresIn
+		);
+
+		return Result<TwitchAuthData>.Success(twitchAuthData);
+	}
 }

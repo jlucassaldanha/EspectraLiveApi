@@ -43,4 +43,31 @@ public class TwitchApiClient
 
 		return Result<TwitchUserData>.Success(userData);
 	}
+
+	public async Task<Result<TwitchUserData>> GetUsersData(string accessToken)
+	{
+		var request = new HttpRequestMessage(HttpMethod.Get, "users");
+
+		request.Headers.Add("Authorization", $"Bearer {accessToken}");
+		request.Headers.Add("Client-Id", _options.Value.ClientId);
+
+		var response = await _httpClient.SendAsync(request);
+
+		if (!response.IsSuccessStatusCode)
+		{
+            var errorData = await response.Content.ReadFromJsonAsync<TwitchErrorResponse>();
+			var errorMessage = errorData?.Message ?? errorData?.Error ?? response.ReasonPhrase ?? "Erro ao contatar a Twitch";
+			
+			return Result<TwitchUserData>.Failure(new Error(errorMessage, response.StatusCode));
+		}
+
+		var result = await response.Content.ReadFromJsonAsync<TwitchUserResponse>();
+
+		if (result == null)
+			return Result<TwitchUserData>.Failure(new Error("Usuário não encontrado.", HttpStatusCode.InternalServerError));
+
+		var userData = result.Data.First();
+
+		return Result<TwitchUserData>.Success(userData);
+	}
 }

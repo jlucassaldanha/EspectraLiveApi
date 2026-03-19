@@ -3,13 +3,13 @@ namespace SpectraLiveApi.Entities;
 public class UnviewUser
 {
 	public Guid Id { get; private set; }
-	public string ChannelId { get; private set; }
-	public string TwitchUserId { get; private set; }
+	public string UserId { get; private set; }
+	public string TwitchId { get; private set; }
 
-	public UnviewUser(string channelId, string twitchUserId)
+	public UnviewUser(string userId, string twitchId)
 	{
-		ChannelId = channelId;
-		TwitchUserId = twitchUserId;
+		UserId = userId;
+		TwitchId = twitchId;
 
 		Id = Guid.NewGuid();
 	}
