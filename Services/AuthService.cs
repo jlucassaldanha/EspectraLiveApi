@@ -16,51 +16,40 @@ public class AuthService
 	private readonly TwitchApiClient _twitchApi;
 	private readonly string _apiUrl;
 	private readonly JwtService _jwtService;
-	private readonly IMemoryCache _cache;
 	private readonly IUserRepository _userRepository;
 
-	public AuthService(TwitchAuthClient twitchAuth, TwitchApiClient twitchApi, IMemoryCache cache, IOptions<SpectraLiveSettings> options, IUserRepository userRepository, JwtService jwtService)
+	public AuthService(TwitchAuthClient twitchAuth, TwitchApiClient twitchApi, IOptions<SpectraLiveSettings> options, IUserRepository userRepository, JwtService jwtService)
 	{
 		_twitchAuth = twitchAuth;
 		_twitchApi = twitchApi;
 		_apiUrl = options.Value.ApiUrl;
-		_cache = cache;
 		_jwtService = jwtService;
 		_userRepository = userRepository;
 	}
 
-	public async Task<Result<TempSessionToken>> GetSessionWithTwitchCode(string code)
+	public async Task<Result<TwitchAuthData>> GetTwitchAuthDataWithCode(string code)
 	{
 		var redirectUri = $"{_apiUrl}/auth/callback";
 
 		var authData = await _twitchAuth.GetAuthToken(code, redirectUri);
 
 		if (authData.Error != null)
-			return Result<TempSessionToken>.Failure(new Error(authData.Error.Message, authData.Error.ErrorCode));
+			return Result<TwitchAuthData>.Failure(new Error(authData.Error.Message, authData.Error.ErrorCode));
 		if (authData.Data == null)
-			return Result<TempSessionToken>.Failure(new Error("Resposta inesperada da Twitch", HttpStatusCode.InternalServerError)); 
-
-		var sessionToken = Guid.NewGuid().ToString();
+			return Result<TwitchAuthData>.Failure(new Error("Resposta inesperada da Twitch", HttpStatusCode.InternalServerError)); 
 		
-		var tempSession = new TempSessionData(
+		var twitchAuthData = new TwitchAuthData(
 			authData.Data.AccessToken,
 			authData.Data.RefreshToken,
 			authData.Data.ExpiresIn
 		);
-
-		_cache.Set(sessionToken, tempSession, TimeSpan.FromMinutes(5));
 		
-		return Result<TempSessionToken>.Success(new TempSessionToken(sessionToken));
+		return Result<TwitchAuthData>.Success(twitchAuthData);
 	}
 
-	public async Task<Result<UserData>> GetUserInformationWithSession(string sessionToken)
+	public async Task<Result<UserData>> UpsertUserWithTwitchAuthData(TwitchAuthData twitchAuthData)
 	{
-		var sessionData = _cache.Get<TempSessionData>(sessionToken);
-
-		if (sessionData == null)
-			return Result<UserData>.Failure(new Error("Sessão inválida ou expirada. Faça login novamente.", HttpStatusCode.Unauthorized));
-
-		string accessToken = sessionData.AccessToken;
+		string accessToken = twitchAuthData.AccessToken;
 
 		var response = await _twitchApi.GetUserProfile(accessToken);
 
@@ -76,9 +65,9 @@ public class AuthService
 		if (userDataFromDb == null)
 		{
 			freshUser = new User(
-				sessionData.AccessToken, 
-				sessionData.RefreshToken,
-				sessionData.ExpiresIn,
+				twitchAuthData.AccessToken, 
+				twitchAuthData.RefreshToken,
+				twitchAuthData.ExpiresIn,
 				userDataFromTwitchResponse.Id,
 				userDataFromTwitchResponse.Login,
 				userDataFromTwitchResponse.DisplayName,
@@ -89,9 +78,9 @@ public class AuthService
 		}
 		else
 		{
-			userDataFromDb.AccessToken = sessionData.AccessToken;
-			userDataFromDb.RefreshToken = sessionData.RefreshToken;
-			userDataFromDb.ExpiresIn = sessionData.ExpiresIn;
+			userDataFromDb.AccessToken = twitchAuthData.AccessToken;
+			userDataFromDb.RefreshToken = twitchAuthData.RefreshToken;
+			userDataFromDb.ExpiresIn = twitchAuthData.ExpiresIn;
 
 			freshUser = userDataFromDb;
 
@@ -108,40 +97,7 @@ public class AuthService
 			freshUser.ProfileImgUrl,
 			freshUser.Id
 		);
-		
-		_cache.Remove(sessionToken);
 
 		return Result<UserData>.Success(newUserData);
-	}
-
-	public async Task<Result<UserData>> GetUserInformationWithJwt(string authToken)
-	{
-		var claims = _jwtService.ValidateToken(authToken);
-		if (claims == null)
-			return Result<UserData>.Failure(new Error("JWT inválido", HttpStatusCode.Unauthorized));
-
-		var twitchUserId = claims.FindFirst("twitchId")?.Value;
-		var userId = claims.FindFirst("userId")?.Value;
-		
-		if (string.IsNullOrEmpty(twitchUserId) || string.IsNullOrEmpty(userId))
-			return Result<UserData>.Failure(new ("Chaves de usuário não encontradas no JWT", HttpStatusCode.Unauthorized));
-		
-		User? userDataFromDb = await _userRepository.GetProfileByTwitchIdAsync(twitchUserId);
-
-		if (userDataFromDb == null)
-			return Result<UserData>.Failure(new ("Usuário não encontrado no banco de dados.", HttpStatusCode.NotFound));
-
-		var userData = new UserData(
-			userDataFromDb.AccessToken, 
-			userDataFromDb.RefreshToken,
-			userDataFromDb.ExpiresIn,
-			userDataFromDb.TwitchId,
-			userDataFromDb.Login,
-			userDataFromDb.DisplayName,
-			userDataFromDb.ProfileImgUrl,
-			userDataFromDb.Id
-		);
-
-		return Result<UserData>.Success(userData);
 	}
 }

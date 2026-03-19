@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Options;
-using SpectraLiveApi.Common.Models;
 using SpectraLiveApi.Settings;
 using SpectraLiveApi.Services;
-using SpectraLiveApi.DTOs.Users;
+using SpectraLiveApi.DTOs.Auth;
+using System.Security.Claims;
 
 namespace SpectraLiveApi.Endpoints;
 
@@ -24,22 +24,39 @@ public static class AuthEndpoints
 			return Results.Redirect(twitchAuthUrl);
 		});
 
-		group.MapGet("/callback", async (HttpContext context, AuthService authService, string code, string? error) =>
+		group.MapGet("/callback", async (HttpContext context, AuthService authService, JwtService jwtService, string code, string? error) =>
 		{
 			if (error != null) return Results.Unauthorized();
 
-			var sessionResponse = await authService.GetSessionWithTwitchCode(code);
+			var response = await authService.GetTwitchAuthDataWithCode(code);
 
-			if (sessionResponse.Error != null)
+			if (response.Error != null)
 				return Results.Problem(
-					detail: sessionResponse.Error.Message, 
-					statusCode: (int)sessionResponse.Error.ErrorCode
+					detail: response.Error.Message, 
+					statusCode: (int)response.Error.ErrorCode
 				);
 
-			if (sessionResponse.Data == null)
+			if (response.Data == null)
 				return Results.InternalServerError(new { Error = "Erro inesperado em callback" });
 
-			context.Response.Cookies.Append("sessionToken",  sessionResponse.Data.SessionToken, new CookieOptions
+			var result = await authService.UpsertUserWithTwitchAuthData(response.Data);
+				
+			if (result.Error != null)
+				return Results.Problem(
+					detail: result.Error.Message,
+					statusCode: (int)result.Error.ErrorCode
+				);
+			
+			if (result.Data == null)
+				return Results.InternalServerError(new { Error = "Erro inesperado ao tentar registrar informações do usuário." });
+
+			var sessionToken = jwtService.GenerateToken(
+				result.Data.Id.ToString(), 
+				result.Data.TwitchId, 
+				DateTime.UtcNow.AddMinutes(1)
+			);
+
+			context.Response.Cookies.Append("sessionToken",  sessionToken, new CookieOptions
 				{
 					HttpOnly = true,
 					Secure = true,
@@ -48,76 +65,52 @@ public static class AuthEndpoints
 				}
 			);
 	
-			return Results.Ok(new { message = "sessionToken gravado com sucesso."});
+			return Results.Ok(new { message = $"Usuário gravado com sucesso. {sessionToken}"});
 		});
 
-		group.MapGet("/me", async (HttpContext context, AuthService authService, JwtService jwtService) =>
+		group.MapGet("/token", async (HttpContext context, AuthService authService, JwtService jwtService) =>
 		{
 			context.Request.Cookies.TryGetValue("sessionToken", out var sessionToken);
-			context.Request.Cookies.TryGetValue("authToken", out var authToken);
-			
-			UserData userData;
 
 			if (sessionToken != null)
 			{
-				var result = await authService.GetUserInformationWithSession(sessionToken);
-				
-				if (result.Error != null)
-					return Results.Problem(
-						detail: result.Error.Message,
-						statusCode: (int)result.Error.ErrorCode
-					);
-				
-				if (result.Data == null)
-					return Results.InternalServerError(new { Error = "Erro inesperado ao tentar buscar informações do usuário." });
+				var principal = jwtService.ValidateToken(sessionToken);
 
-				userData = result.Data;
+				if (principal == null)
+					return Results.Unauthorized();
 
-				var newAuthToken = jwtService.GenerateToken(userData.Id.ToString(), userData.TwitchId);
+				var userId = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+				var twitchId = principal.Claims.FirstOrDefault(c => c.Type == "twitchId")?.Value;
 				
-				context.Response.Cookies.Delete("sessionToken");
+				if (userId == null || twitchId == null) 
+					return Results.Unauthorized();
+				
+				var newToken = jwtService.GenerateToken(userId, twitchId, DateTime.UtcNow.AddDays(7));
 
-				context.Response.Cookies.Append("authToken", newAuthToken, new CookieOptions
+				context.Response.Cookies.Append("jwt",  newToken, new CookieOptions
 					{
 						HttpOnly = true,
 						Secure = true,
 						SameSite = SameSiteMode.None,
-						Expires = DateTimeOffset.UtcNow.AddDays(7)
+						Expires = DateTimeOffset.UtcNow.AddMinutes(5)
 					}
 				);
-			}
-			else if (sessionToken == null && authToken != null)
-			{
-				var result = await authService.GetUserInformationWithJwt(authToken);
-
-				if (result.Error != null)
-					return Results.Problem(
-						detail: result.Error.Message,
-						statusCode: (int)result.Error.ErrorCode
-					);
 				
-				if (result.Data == null)
-					return Results.InternalServerError(new { Error = "Erro inesperado ao tentar buscar informações do usuário." });
+				context.Response.Cookies.Delete("sessionToken");
 
-				userData = result.Data;
+				var token = new TokenResponse(newToken);
+
+				return Results.Ok(token);
 			}
 			else
 			{
 				return Results.Unauthorized();
 			}
-
-			var responseData = new UserResponse(
-				userData.DisplayName,
-				userData.ProfileImgUrl,
-				userData.Id
-			);
-
-			return Results.Ok(responseData);
 		});
 
 		group.MapGet("/logout", (HttpContext context) => {
 			context.Response.Cookies.Delete("sessionToken");
-			context.Response.Cookies.Delete("authToken");
+			context.Response.Cookies.Delete("jwt");
 			Results.Ok(new { message = "Logout realizado com sucesso."});
 		});
 	}

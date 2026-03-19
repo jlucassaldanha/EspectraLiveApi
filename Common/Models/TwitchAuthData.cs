@@ -1,8 +1,6 @@
 namespace SpectraLiveApi.Common.Models;
 
-public record TempSessionToken(string SessionToken);
-
-public record TempSessionData(
+public record TwitchAuthData(
 	string AccessToken,
 	string RefreshToken,
 	int ExpiresIn

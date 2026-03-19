@@ -6,8 +6,15 @@ using SpectraLiveApi.Integrations;
 using SpectraLiveApi.Repositories;
 using SpectraLiveApi.Services;
 using SpectraLiveApi.Middleware;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddDbContext<AppDbContext>(options => 
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -15,8 +22,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddProblemDetails();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-
-builder.Services.AddMemoryCache();
 
 builder.Services.AddCors(options =>
 {
@@ -35,9 +40,23 @@ builder.Services.AddHttpClient<TwitchAuthClient>(client =>
 builder.Services.AddHttpClient<TwitchApiClient>(client => 
     client.BaseAddress = new Uri("https://api.twitch.tv/helix/"));
 
-builder.Services.AddScoped<JwtService>();
-builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var secretKey = builder.Configuration["SpectraLive:SecretKey"];
+        var keyBytes = Encoding.ASCII.GetBytes(secretKey!);
+        
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+          ValidateIssuerSigningKey = true,
+          IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+          ValidateIssuer = false,
+          ValidateAudience = false,
+          ClockSkew = TimeSpan.Zero
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 builder.Services.Configure<TwitchSettings>(builder.Configuration.GetSection("Twitch"));
 builder.Services.Configure<SpectraLiveSettings>(builder.Configuration.GetSection("SpectraLive"));
