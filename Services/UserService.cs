@@ -25,24 +25,20 @@ public class UserService
 		_userRepository = userRepository;
 	}
 
-	public async Task<Result<UserData>> GetUserInformation(string twitchId)
+	public async Task<Result<UserProfile>> GetUserProfile(string userId)
 	{
-		User? userDataFromDb = await _userRepository.GetProfileByTwitchIdAsync(twitchId);
+		User? userProfileFromDb = await _userRepository.GetProfileByUserIdAsync(Guid.Parse(userId));
 
-		if (userDataFromDb == null)
-			return Result<UserData>.Failure(new ("Usuário não encontrado no banco de dados.", HttpStatusCode.NotFound));
+		if (userProfileFromDb == null)
+			return Result<UserProfile>.Failure(new ("Usuário não encontrado no banco de dados.", HttpStatusCode.NotFound));
 
-		var userData = new UserData(
-			userDataFromDb.AccessToken, 
-			userDataFromDb.RefreshToken,
-			userDataFromDb.ExpiresIn,
-			userDataFromDb.TwitchId,
-			userDataFromDb.Login,
-			userDataFromDb.DisplayName,
-			userDataFromDb.ProfileImgUrl,
-			userDataFromDb.Id
+		var userProfile = new UserProfile(
+			userProfileFromDb.TwitchId,
+			userProfileFromDb.DisplayName,
+			userProfileFromDb.ProfileImgUrl,
+			userProfileFromDb.Id
 		);
 
-		return Result<UserData>.Success(userData);
+		return Result<UserProfile>.Success(userProfile);
 	}
 }

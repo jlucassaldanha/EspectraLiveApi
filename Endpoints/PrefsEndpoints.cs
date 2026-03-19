@@ -10,12 +10,12 @@ public static class PrefsEndpoints
 
 		group.MapPost("/unviews", async (ClaimsPrincipal user) =>
 		{
-			var userIdString = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
-			if (string.IsNullOrEmpty(userIdString))
+			if (string.IsNullOrEmpty(userId))
 				return Results.Unauthorized();
 
-			return Results.Ok(new { Message = userIdString });
+			return Results.Ok(new { Message = userId });
 		})
 		.RequireAuthorization();
 

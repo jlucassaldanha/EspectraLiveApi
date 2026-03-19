@@ -13,6 +13,7 @@ using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
@@ -70,5 +71,6 @@ app.UseAuthorization();
 
 app.MapAuthEndpoints();
 app.MapPrefsEndpoints();
+app.MapInfoEndpoints();
 
 app.Run("http://localhost:8000");

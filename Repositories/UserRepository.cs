@@ -18,6 +18,11 @@ public class UserRepository : IUserRepository
 		return await _db.Users.FirstOrDefaultAsync(u => u.TwitchId == twitchId);
 	}
 
+	public async Task<User?> GetProfileByUserIdAsync(Guid id)
+	{
+		return await _db.Users.FirstOrDefaultAsync(u => u.Id == id);
+	}
+
 	public async Task AddAsync(User user)
 	{
 		await _db.Users.AddAsync(user);
