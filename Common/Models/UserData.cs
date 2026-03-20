@@ -5,7 +5,6 @@ public record UserData(
 	string RefreshToken,
 	int ExpiresIn,
 	string TwitchId,
-	string Login, 
 	string DisplayName, 
 	string ProfileImgUrl,
 	Guid Id

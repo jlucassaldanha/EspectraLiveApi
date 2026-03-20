@@ -69,7 +69,6 @@ public class AuthService
 				twitchAuthData.RefreshToken,
 				twitchAuthData.ExpiresIn,
 				userDataFromTwitchResponse.Id,
-				userDataFromTwitchResponse.Login,
 				userDataFromTwitchResponse.DisplayName,
 				userDataFromTwitchResponse.ProfileImgUrl
 			);
@@ -81,6 +80,8 @@ public class AuthService
 			userDataFromDb.AccessToken = twitchAuthData.AccessToken;
 			userDataFromDb.RefreshToken = twitchAuthData.RefreshToken;
 			userDataFromDb.ExpiresIn = twitchAuthData.ExpiresIn;
+			userDataFromDb.DisplayName = userDataFromTwitchResponse.DisplayName;
+			userDataFromDb.ProfileImgUrl = userDataFromTwitchResponse.ProfileImgUrl;
 
 			freshUser = userDataFromDb;
 
@@ -92,7 +93,6 @@ public class AuthService
 			freshUser.RefreshToken,
 			freshUser.ExpiresIn,
 			freshUser.TwitchId,
-			freshUser.Login,
 			freshUser.DisplayName,
 			freshUser.ProfileImgUrl,
 			freshUser.Id

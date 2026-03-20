@@ -58,7 +58,7 @@ public static class InfoEndpoints
 				return Results.InternalServerError(new { Error = "Erro inesperado ao buscar dados de autenticação da Twitch" });
 
 			// Colocar parte de pesquisar usuarios
-
+			return Results.Ok();
 			
 		})
 		.RequireAuthorization();		

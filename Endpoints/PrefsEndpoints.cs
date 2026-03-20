@@ -12,33 +12,33 @@ public static class PrefsEndpoints
 	{
 		var group = app.MapGroup("/prefs");
 
-		group.MapPost("/unviews", async (ClaimsPrincipal user, UnviewsService unviewsService, [FromBody] string[] twitchIds) =>
+		group.MapPost("/unviews", async (ClaimsPrincipal user, UnviewsService unviewsService, [FromBody] UnviewsIdsRequest unviewIds) =>
 		{
 			var userId = user.GetUserId();
 
 			if (userId == null)
 				return Results.Unauthorized();
 
-			if (twitchIds == null || twitchIds.Length == 0) 
+			if (unviewIds.TwitchIds == null || unviewIds.TwitchIds.Length == 0) 
 				return Results.BadRequest("Nenhum ID informado.");
 
-			await unviewsService.AddUnviewsToUser(twitchIds, userId);
+			await unviewsService.AddUnviewsToUser(unviewIds.TwitchIds, userId);
 			
 			return Results.Ok();
 		})
 		.RequireAuthorization();
 
-		group.MapDelete("/unviews", async (ClaimsPrincipal user, UnviewsService unviewsService, [FromBody] string[] twitchIds) =>
+		group.MapDelete("/unviews", async (ClaimsPrincipal user, UnviewsService unviewsService, [FromBody] UnviewsIdsRequest unviewIds) =>
 		{
 			var userId = user.GetUserId();
 
 			if (userId == null)
 				return Results.Unauthorized();
 
-			if (twitchIds == null || twitchIds.Length == 0) 
+			if (unviewIds.TwitchIds == null || unviewIds.TwitchIds.Length == 0) 
 				return Results.BadRequest("Nenhum ID informado.");
 
-			await unviewsService.DeleteUnviewsFromUser(twitchIds, userId);
+			await unviewsService.DeleteUnviewsFromUser(unviewIds.TwitchIds, userId);
 
 			return Results.Ok();
 		}).RequireAuthorization();

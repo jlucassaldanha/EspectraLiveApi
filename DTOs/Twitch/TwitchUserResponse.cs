@@ -3,8 +3,7 @@ using System.Text.Json.Serialization;
 namespace SpectraLiveApi.DTOs.Twitch;
 
 public record TwitchUserData(
-	string Id, 
-	string Login, 
+	string Id,  
 	[property: JsonPropertyName("display_name")] string DisplayName, 
 	[property: JsonPropertyName("profile_image_url")] string ProfileImgUrl
 );
