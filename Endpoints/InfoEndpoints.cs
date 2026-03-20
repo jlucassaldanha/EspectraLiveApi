@@ -35,7 +35,32 @@ public static class InfoEndpoints
 			);	
 			
 			return Results.Ok(userResponse);
+
 		})
 		.RequireAuthorization();
+
+		group.MapGet("/users", async (ClaimsPrincipal user, UserService userService) =>
+		{
+			var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+			if (string.IsNullOrEmpty(userId))
+				return Results.Unauthorized();
+
+			var response = await userService.GetTwitchUserAuthData(userId);
+
+			if (response.Error != null)
+				return Results.Problem(
+					detail: response.Error.Message, 
+					statusCode: (int)response.Error.ErrorCode
+				);
+
+			if (response.Data == null)
+				return Results.InternalServerError(new { Error = "Erro inesperado ao buscar dados de autenticação da Twitch" });
+
+			// Colocar parte de pesquisar usuarios
+
+			
+		})
+		.RequireAuthorization();		
 	}
 }

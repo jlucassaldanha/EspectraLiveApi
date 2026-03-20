@@ -9,7 +9,7 @@ public class AppDbContext : DbContext
 	public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
 	public DbSet<User> Users { get; set; }
-	public DbSet<UnviewUser> UnviewUsers { get; set; }
+	public DbSet<Unviews> Unviews { get; set; }
 }
 
 public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>

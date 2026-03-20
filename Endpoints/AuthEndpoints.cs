@@ -65,7 +65,7 @@ public static class AuthEndpoints
 				}
 			);
 	
-			return Results.Ok(new { message = $"Usuário gravado com sucesso. {sessionToken}"});
+			return Results.Ok(new { message = $"Usuário gravado com sucesso."});
 		});
 
 		group.MapGet("/token", async (HttpContext context, AuthService authService, JwtService jwtService) =>

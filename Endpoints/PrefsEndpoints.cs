@@ -1,5 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using SpectraLiveApi.Common;
+using SpectraLiveApi.DTOs.Unviews;
 using SpectraLiveApi.Services;
 
 namespace SpectraLiveApi.Endpoints;
@@ -10,17 +12,45 @@ public static class PrefsEndpoints
 	{
 		var group = app.MapGroup("/prefs");
 
-		group.MapPost("/unviews", async (ClaimsPrincipal user, UserService userService, [FromQuery] string[] twitchId) =>
+		group.MapPost("/unviews", async (ClaimsPrincipal user, UnviewsService unviewsService, [FromBody] string[] twitchIds) =>
 		{
-			var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+			var userId = user.GetUserId();
 
-			if (string.IsNullOrEmpty(userId))
+			if (userId == null)
 				return Results.Unauthorized();
 
-			if (twitchId == null || twitchId.Length == 0) 
+			if (twitchIds == null || twitchIds.Length == 0) 
 				return Results.BadRequest("Nenhum ID informado.");
 
-			var response = await userService.GetTwitchUserAuthData(userId);
+			await unviewsService.AddUnviewsToUser(twitchIds, userId);
+			
+			return Results.Ok();
+		})
+		.RequireAuthorization();
+
+		group.MapDelete("/unviews", async (ClaimsPrincipal user, UnviewsService unviewsService, [FromBody] string[] twitchIds) =>
+		{
+			var userId = user.GetUserId();
+
+			if (userId == null)
+				return Results.Unauthorized();
+
+			if (twitchIds == null || twitchIds.Length == 0) 
+				return Results.BadRequest("Nenhum ID informado.");
+
+			await unviewsService.DeleteUnviewsFromUser(twitchIds, userId);
+
+			return Results.Ok();
+		}).RequireAuthorization();
+
+		group.MapGet("/unviews", async (ClaimsPrincipal user, UnviewsService unviewsService) => 
+		{
+			var userId = user.GetUserId();
+
+			if (userId == null)
+				return Results.Unauthorized();
+
+			var response = await unviewsService.ListUnviewsIds(userId);
 
 			if (response.Error != null)
 				return Results.Problem(
@@ -29,24 +59,9 @@ public static class PrefsEndpoints
 				);
 
 			if (response.Data == null)
-				return Results.InternalServerError(new { Error = "Erro inesperado ao buscar dados de autenticação da Twitch" });
+				return Results.InternalServerError(new { Error = "Erro inesperado ao buscar dados de ids da Twitch" });
 
-			
-
-			return Results.Ok(new { Message = userId });
-		})
-		.RequireAuthorization();
-
-		group.MapDelete("/unviews/{id:guid}", async () => {});
-
-		group.MapGet("/unviews", async (ClaimsPrincipal user) => 
-		{
-			var userIdString = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-			if (string.IsNullOrEmpty(userIdString))
-				return Results.Unauthorized();
-
-			return Results.Ok(new { Message = userIdString });
+			return Results.Ok(new UnviewsIdsResponse(response.Data.IdsList));
 		})
 		.RequireAuthorization();
 	}
