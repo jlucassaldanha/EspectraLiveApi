@@ -72,7 +72,7 @@ public static class InfoEndpoints
 			if (modsIdsResponse.Data == null)
 				return Results.InternalServerError(new { Error = "Erro inesperado ao buscar mods na Twitch" });	
 
-			var modsResponse = await userService.GetTwitchUsersData(authResponse.Data.AccessToken, authResponse.Data.RefreshToken, twitchId, modsIdsResponse.Data.ModsIds);
+			var modsResponse = await userService.GetTwitchUsersData(authResponse.Data.AccessToken, authResponse.Data.RefreshToken, twitchId, modsIdsResponse.Data.Ids);
 
 			if (modsResponse.Error != null)
 				return Results.Problem(
@@ -90,23 +90,45 @@ public static class InfoEndpoints
 		group.MapGet("/chatters", async (ClaimsPrincipal user, UserService userService) =>
 		{
 			var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+			var twitchId = user.Claims.FirstOrDefault(c => c.Type == "twitchId")?.Value;
 
-			if (string.IsNullOrEmpty(userId))
+			if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(twitchId))
 				return Results.Unauthorized();
 
-			var response = await userService.GetTwitchUserAuthData(userId);
+			var authResponse = await userService.GetTwitchUserAuthData(userId);
 
-			if (response.Error != null)
+			if (authResponse.Error != null)
 				return Results.Problem(
-					detail: response.Error.Message, 
-					statusCode: (int)response.Error.ErrorCode
+					detail: authResponse.Error.Message, 
+					statusCode: (int)authResponse.Error.ErrorCode
 				);
 
-			if (response.Data == null)
+			if (authResponse.Data == null)
 				return Results.InternalServerError(new { Error = "Erro inesperado ao buscar dados de autenticação da Twitch" });
 
-			// Colocar parte de pesquisar usuarios
-			return Results.Ok();
+			var chattersIdsResponse = await userService.GetTwitchUserChatters(authResponse.Data.AccessToken, authResponse.Data.RefreshToken, twitchId);
+
+			if (chattersIdsResponse.Error != null)
+				return Results.Problem(
+					detail: chattersIdsResponse.Error.Message, 
+					statusCode: (int)chattersIdsResponse.Error.ErrorCode
+				);
+
+			if (chattersIdsResponse.Data == null)
+				return Results.InternalServerError(new { Error = "Erro inesperado ao buscar chatters na Twitch" });	
+
+			var chattersResponse = await userService.GetTwitchUsersData(authResponse.Data.AccessToken, authResponse.Data.RefreshToken, twitchId, chattersIdsResponse.Data.Ids);
+
+			if (chattersResponse.Error != null)
+				return Results.Problem(
+					detail: chattersResponse.Error.Message, 
+					statusCode: (int)chattersResponse.Error.ErrorCode
+				);
+
+			if (chattersResponse.Data == null)
+				return Results.InternalServerError(new { Error = "Erro inesperado ao buscar chatters na Twitch" });	
+
+			return Results.Ok(chattersResponse.Data);
 		})
 		.RequireAuthorization();
 

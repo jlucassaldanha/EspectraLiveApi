@@ -1,3 +1,3 @@
 namespace SpectraLiveApi.Common.Models;
 
-public record TwitchModsIds(List<string> ModsIds);
+public record TwitchUsersIds(List<string> Ids);
