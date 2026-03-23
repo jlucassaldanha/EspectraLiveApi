@@ -2,7 +2,6 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using SpectraLiveApi.DTOs.Twitch;
 using SpectraLiveApi.DTOs.Users;
-using SpectraLiveApi.Integrations;
 using SpectraLiveApi.Services;
 
 namespace SpectraLiveApi.Endpoints;

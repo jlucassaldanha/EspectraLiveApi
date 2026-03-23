@@ -1,13 +1,7 @@
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Options;
 using SpectraLiveApi.Common;
 using SpectraLiveApi.Common.Models;
-using SpectraLiveApi.Settings;
-using SpectraLiveApi.Integrations;
 using SpectraLiveApi.Repositories;
 using SpectraLiveApi.Entities;
-using System.Net;
-using Microsoft.EntityFrameworkCore.Query;
 
 namespace SpectraLiveApi.Services;
 

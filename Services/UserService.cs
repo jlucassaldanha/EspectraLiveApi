@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using SpectraLiveApi.Common;
 using SpectraLiveApi.Common.Models;
@@ -7,8 +6,6 @@ using SpectraLiveApi.Integrations;
 using SpectraLiveApi.Repositories;
 using SpectraLiveApi.Entities;
 using System.Net;
-using SpectraLiveApi.DTOs.Twitch;
-using Microsoft.AspNetCore.DataProtection.XmlEncryption;
 
 namespace SpectraLiveApi.Services;
 
@@ -16,14 +13,12 @@ public class UserService
 {
 	private readonly TwitchAuthClient _twitchAuth;
 	private readonly TwitchApiClient _twitchApi;
-	private readonly string _apiUrl;
 	private readonly IUserRepository _userRepository;
 
 	public UserService(TwitchAuthClient twitchAuth, TwitchApiClient twitchApi,  IOptions<SpectraLiveSettings> options, IUserRepository userRepository)
 	{
 		_twitchAuth = twitchAuth;
 		_twitchApi = twitchApi;
-		_apiUrl = options.Value.ApiUrl;
 		_userRepository = userRepository;
 	}
 

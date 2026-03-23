@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using SpectraLiveApi.Common;
 using SpectraLiveApi.Common.Models;
@@ -15,7 +14,6 @@ public class AuthService
 	private readonly TwitchAuthClient _twitchAuth;
 	private readonly TwitchApiClient _twitchApi;
 	private readonly string _apiUrl;
-	private readonly JwtService _jwtService;
 	private readonly IUserRepository _userRepository;
 
 	public AuthService(TwitchAuthClient twitchAuth, TwitchApiClient twitchApi, IOptions<SpectraLiveSettings> options, IUserRepository userRepository, JwtService jwtService)
@@ -23,7 +21,6 @@ public class AuthService
 		_twitchAuth = twitchAuth;
 		_twitchApi = twitchApi;
 		_apiUrl = options.Value.ApiUrl;
-		_jwtService = jwtService;
 		_userRepository = userRepository;
 	}
 

@@ -20,12 +20,3 @@ public record Result<T>
 	public static Result<T> Success(T data) => new (data, null);
 	public static Result<T> Failure(Error error) => new (default, error);
 }
-
-/*public record Result<TSuccess, TError>
-{
-	public TSuccess? Success { get; init; }
-	public TError? Error { get; init; }
-
-	public bool IsSuccess => Success != null;
-	public bool IsError => Error != null;
-}*/
