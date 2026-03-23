@@ -18,7 +18,7 @@ public record Result<T>
 	}
 
 	public static Result<T> Success(T data) => new (data, null);
-	public static Result<T> Failure(Error error) => new (default, null);
+	public static Result<T> Failure(Error error) => new (default, error);
 }
 
 /*public record Result<TSuccess, TError>

@@ -7,6 +7,8 @@ using SpectraLiveApi.Integrations;
 using SpectraLiveApi.Repositories;
 using SpectraLiveApi.Entities;
 using System.Net;
+using SpectraLiveApi.DTOs.Twitch;
+using Microsoft.AspNetCore.DataProtection.XmlEncryption;
 
 namespace SpectraLiveApi.Services;
 
@@ -30,7 +32,7 @@ public class UserService
 		User? userProfileFromDb = await _userRepository.GetProfileByUserIdAsync(Guid.Parse(userId));
 
 		if (userProfileFromDb == null)
-			return Result<UserProfile>.Failure(new ("Usuário não encontrado no banco de dados.", HttpStatusCode.NotFound));
+			return Result<UserProfile>.Failure(new Error("Usuário não encontrado no banco de dados.", HttpStatusCode.NotFound));
 
 		var userProfile = new UserProfile(
 			userProfileFromDb.TwitchId,
@@ -47,7 +49,7 @@ public class UserService
 		User? userProfileFromDb = await _userRepository.GetProfileByUserIdAsync(Guid.Parse(userId));
 
 		if (userProfileFromDb == null)
-			return Result<TwitchAuthData>.Failure(new ("Usuário não encontrado no banco de dados.", HttpStatusCode.NotFound));
+			return Result<TwitchAuthData>.Failure(new Error("Usuário não encontrado no banco de dados.", HttpStatusCode.NotFound));
 
 		var twitchAuthData = new TwitchAuthData(
 			userProfileFromDb.AccessToken,
@@ -56,5 +58,88 @@ public class UserService
 		);
 
 		return Result<TwitchAuthData>.Success(twitchAuthData);
+	}
+
+	public async Task<Result<string>> RefreshUserToken(string twitchId, string refreshToken)
+	{
+		var refreshResponse = await _twitchAuth.GetRefreshToken(refreshToken);
+				
+		if (refreshResponse.Error != null)
+			return Result<string>.Failure(new Error(refreshResponse.Error.Message, refreshResponse.Error.ErrorCode));
+		if (refreshResponse.Data == null)
+			return Result<string>.Failure(new Error("Erro inesperado ao tentar usar Refresh Token da Twitch", HttpStatusCode.InternalServerError));
+
+		var userFromDb = await _userRepository.GetProfileByTwitchIdAsync(twitchId);
+		
+		if (userFromDb == null)
+			return Result<string>.Failure(new Error("Usuário não encontrado no banco de dados.", HttpStatusCode.NotFound));
+
+		userFromDb.AccessToken = refreshResponse.Data.AccessToken;
+		userFromDb.RefreshToken = refreshResponse.Data.RefreshToken;
+		userFromDb.ExpiresIn = refreshResponse.Data.ExpiresIn;
+		
+		await _userRepository.UpdateAsync(userFromDb);
+
+		return Result<string>.Success(userFromDb.AccessToken);
+	}
+
+	public async Task<Result<TwitchModsIds>> GetTwitchUserMods(string accessToken, string refreshToken, string twitchId)
+	{
+		var response = await _twitchApi.GetUserMods(accessToken, twitchId);
+
+		if (response.Error != null && response.Error.ErrorCode != HttpStatusCode.Unauthorized)
+			return Result<TwitchModsIds>.Failure(new Error(response.Error.Message, response.Error.ErrorCode));
+
+		if (response.Error?.ErrorCode == HttpStatusCode.Unauthorized)
+		{
+			var newAccessToken = await RefreshUserToken(twitchId, refreshToken);
+
+			if (newAccessToken.Error != null)
+				return Result<TwitchModsIds>.Failure(new Error(newAccessToken.Error.Message, newAccessToken.Error.ErrorCode));
+			if (newAccessToken.Data == null)
+				return Result<TwitchModsIds>.Failure(new Error("Erro inesperado ao usar refresh token da Twitch", HttpStatusCode.InternalServerError));
+
+			response = await _twitchApi.GetUserMods(newAccessToken.Data, twitchId);
+
+			if (response.Error != null )
+				return Result<TwitchModsIds>.Failure(new Error(response.Error.Message, response.Error.ErrorCode));
+		}
+
+		if (response.Data == null)
+			return Result<TwitchModsIds>.Failure(new Error("Erro inesperado ao buscar mods na Twitch", HttpStatusCode.InternalServerError));
+
+		var modsIds = response.Data.Select(m => m.UserId).ToList();
+
+		return Result<TwitchModsIds>.Success(new TwitchModsIds(modsIds));
+	}
+
+	public async Task<Result<IEnumerable<TwitchUserProfile>>> GetTwitchUsersData(string accessToken, string refreshToken, string twitchUserId, List<string> twitchIds)
+	{
+		var response = await _twitchApi.GetUsersData(accessToken, twitchIds);
+
+		if (response.Error != null && response.Error.ErrorCode != HttpStatusCode.Unauthorized)
+			return Result<IEnumerable<TwitchUserProfile>>.Failure(new Error(response.Error.Message, response.Error.ErrorCode));
+
+		if (response.Error?.ErrorCode == HttpStatusCode.Unauthorized)
+		{
+			var newAccessToken = await RefreshUserToken(twitchUserId, refreshToken);
+
+			if (newAccessToken.Error != null)
+				return Result<IEnumerable<TwitchUserProfile>>.Failure(new Error(newAccessToken.Error.Message, newAccessToken.Error.ErrorCode));
+			if (newAccessToken.Data == null)
+				return Result<IEnumerable<TwitchUserProfile>>.Failure(new Error("Erro inesperado ao usar refresh token da Twitch", HttpStatusCode.InternalServerError));
+
+			response = await _twitchApi.GetUsersData(newAccessToken.Data, twitchIds);
+
+			if (response.Error != null )
+				return Result<IEnumerable<TwitchUserProfile>>.Failure(new Error(response.Error.Message, response.Error.ErrorCode));
+		}
+
+		if (response.Data == null)
+			return Result<IEnumerable<TwitchUserProfile>>.Failure(new Error("Erro inesperado ao buscar mods na Twitch", HttpStatusCode.InternalServerError));
+
+		var usersList = response.Data.Select(u => new TwitchUserProfile(u.Id, u.DisplayName, u.ProfileImgUrl)).ToList();
+
+		return Result<IEnumerable<TwitchUserProfile>>.Success(usersList);
 	}
 }

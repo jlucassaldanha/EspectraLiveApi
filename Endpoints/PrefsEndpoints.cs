@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using SpectraLiveApi.Common;
-using SpectraLiveApi.DTOs.Unviews;
+using SpectraLiveApi.DTOs.Twitch;
 using SpectraLiveApi.Services;
 
 namespace SpectraLiveApi.Endpoints;
@@ -12,7 +12,7 @@ public static class PrefsEndpoints
 	{
 		var group = app.MapGroup("/prefs");
 
-		group.MapPost("/unviews", async (ClaimsPrincipal user, UnviewsService unviewsService, [FromBody] UnviewsIdsRequest unviewIds) =>
+		group.MapPost("/unviews", async (ClaimsPrincipal user, UnviewsService unviewsService, [FromBody] TwitchIdsRequest unviewIds) =>
 		{
 			var userId = user.GetUserId();
 
@@ -28,7 +28,7 @@ public static class PrefsEndpoints
 		})
 		.RequireAuthorization();
 
-		group.MapDelete("/unviews", async (ClaimsPrincipal user, UnviewsService unviewsService, [FromBody] UnviewsIdsRequest unviewIds) =>
+		group.MapDelete("/unviews", async (ClaimsPrincipal user, UnviewsService unviewsService, [FromBody] TwitchIdsRequest unviewIds) =>
 		{
 			var userId = user.GetUserId();
 
@@ -61,7 +61,7 @@ public static class PrefsEndpoints
 			if (response.Data == null)
 				return Results.InternalServerError(new { Error = "Erro inesperado ao buscar dados de ids da Twitch" });
 
-			return Results.Ok(new UnviewsIdsResponse(response.Data.IdsList));
+			return Results.Ok(new TwitchIdsResponse(response.Data.IdsList));
 		})
 		.RequireAuthorization();
 	}

@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
+using SpectraLiveApi.DTOs.Twitch;
 using SpectraLiveApi.DTOs.Users;
 using SpectraLiveApi.Integrations;
 using SpectraLiveApi.Services;
@@ -40,7 +42,7 @@ public static class InfoEndpoints
 		})
 		.RequireAuthorization();
 
-		group.MapGet("/mods", async (ClaimsPrincipal user, UserService userService, TwitchApiClient twitchApiClient) =>
+		group.MapGet("/mods", async (ClaimsPrincipal user, UserService userService) =>
 		{
 			var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 			var twitchId = user.Claims.FirstOrDefault(c => c.Type == "twitchId")?.Value;
@@ -48,55 +50,42 @@ public static class InfoEndpoints
 			if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(twitchId))
 				return Results.Unauthorized();
 
-			var response = await userService.GetTwitchUserAuthData(userId);
+			var authResponse = await userService.GetTwitchUserAuthData(userId);
 
-			if (response.Error != null)
+			if (authResponse.Error != null)
 				return Results.Problem(
-					detail: response.Error.Message, 
-					statusCode: (int)response.Error.ErrorCode
+					detail: authResponse.Error.Message, 
+					statusCode: (int)authResponse.Error.ErrorCode
 				);
 
-			if (response.Data == null)
+			if (authResponse.Data == null)
 				return Results.InternalServerError(new { Error = "Erro inesperado ao buscar dados de autenticação da Twitch" });
 
-			var mods = await twitchApiClient.GetUserMods(response.Data.AccessToken, twitchId);
+			var modsIdsResponse = await userService.GetTwitchUserMods(authResponse.Data.AccessToken, authResponse.Data.RefreshToken, twitchId);
 
-			if (mods.Error != null)
+			if (modsIdsResponse.Error != null)
 				return Results.Problem(
-					detail: mods.Error.Message, 
-					statusCode: (int)mods.Error.ErrorCode
+					detail: modsIdsResponse.Error.Message, 
+					statusCode: (int)modsIdsResponse.Error.ErrorCode
 				);
 
-			if (mods.Data == null)
+			if (modsIdsResponse.Data == null)
 				return Results.InternalServerError(new { Error = "Erro inesperado ao buscar mods na Twitch" });	
 
-			return Results.Ok(mods.Data);
-		})
-		.RequireAuthorization();
+			var modsResponse = await userService.GetTwitchUsersData(authResponse.Data.AccessToken, authResponse.Data.RefreshToken, twitchId, modsIdsResponse.Data.ModsIds);
 
-		group.MapGet("/users", async (ClaimsPrincipal user, UserService userService) =>
-		{
-			var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-
-			if (string.IsNullOrEmpty(userId))
-				return Results.Unauthorized();
-
-			var response = await userService.GetTwitchUserAuthData(userId);
-
-			if (response.Error != null)
+			if (modsResponse.Error != null)
 				return Results.Problem(
-					detail: response.Error.Message, 
-					statusCode: (int)response.Error.ErrorCode
+					detail: modsResponse.Error.Message, 
+					statusCode: (int)modsResponse.Error.ErrorCode
 				);
 
-			if (response.Data == null)
-				return Results.InternalServerError(new { Error = "Erro inesperado ao buscar dados de autenticação da Twitch" });
+			if (modsResponse.Data == null)
+				return Results.InternalServerError(new { Error = "Erro inesperado ao buscar mods na Twitch" });	
 
-			// Colocar parte de pesquisar usuarios
-			return Results.Ok();
-			
+			return Results.Ok(modsResponse.Data);
 		})
-		.RequireAuthorization();	
+		.RequireAuthorization();
 
 		group.MapGet("/chatters", async (ClaimsPrincipal user, UserService userService) =>
 		{
@@ -118,6 +107,40 @@ public static class InfoEndpoints
 
 			// Colocar parte de pesquisar usuarios
 			return Results.Ok();
+		})
+		.RequireAuthorization();
+
+		group.MapGet("/users", async (ClaimsPrincipal user, UserService userService, [FromBody] TwitchIdsRequest twitchIds) =>
+		{
+			var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+			var twitchId = user.Claims.FirstOrDefault(c => c.Type == "twitchId")?.Value;
+			
+			if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(twitchId))
+				return Results.Unauthorized();
+
+			var authResponse = await userService.GetTwitchUserAuthData(userId);
+
+			if (authResponse.Error != null)
+				return Results.Problem(
+					detail: authResponse.Error.Message, 
+					statusCode: (int)authResponse.Error.ErrorCode
+				);
+
+			if (authResponse.Data == null)
+				return Results.InternalServerError(new { Error = "Erro inesperado ao buscar dados de autenticação da Twitch" });
+
+			var usersResponse = await userService.GetTwitchUsersData(authResponse.Data.AccessToken, authResponse.Data.RefreshToken, twitchId, twitchIds.TwitchIds.ToList());
+
+			if (usersResponse.Error != null)
+				return Results.Problem(
+					detail: usersResponse.Error.Message, 
+					statusCode: (int)usersResponse.Error.ErrorCode
+				);
+
+			if (usersResponse.Data == null)
+				return Results.InternalServerError(new { Error = "Erro inesperado ao buscar users na Twitch" });	
+
+			return Results.Ok(usersResponse.Data);
 			
 		})
 		.RequireAuthorization();	

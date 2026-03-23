@@ -57,13 +57,13 @@ public class TwitchApiClient
 			if (!string.IsNullOrEmpty(cursor))
 				queryParams += $"&after={cursor}";
 			
-			var request = new HttpRequestMessage(HttpMethod.Get, $"moderators?{queryParams}");
+			var request = new HttpRequestMessage(HttpMethod.Get, $"moderation/moderators?{queryParams}");
 
 			request.Headers.Add("Authorization", $"Bearer {accessToken}");
 			request.Headers.Add("Client-Id", _options.Value.ClientId);
 
 			var response = await _httpClient.SendAsync(request);
-
+			
 			if (!response.IsSuccessStatusCode)
 			{
 				var errorData = await response.Content.ReadFromJsonAsync<TwitchErrorResponse>();
@@ -81,7 +81,7 @@ public class TwitchApiClient
 			}
 
 			var result = await response.Content.ReadFromJsonAsync<TwitchModsResponse>();
-
+			
 			if (result?.Data == null)
 				return Result<IEnumerable<TwitchModsData>>.Failure(new Error("Usuário não encontrado.", HttpStatusCode.InternalServerError));
 
@@ -90,14 +90,18 @@ public class TwitchApiClient
 			cursor = result.Pagination?.Cursor;
 		} while (!string.IsNullOrEmpty(cursor));
 
-		Console.WriteLine($"DADOS: {currentMods}");
-
 		return Result<IEnumerable<TwitchModsData>>.Success(currentMods);
 	}
 
-	/*public async Task<Result<TwitchUserData>> GetUsersData(string accessToken)
+	public async Task<Result<IEnumerable<TwitchUserData>>> GetUsersData(string accessToken, IEnumerable<string> twitchIds)
 	{
-		var request = new HttpRequestMessage(HttpMethod.Get, "users");
+		var queryParams = $"id={twitchIds.ElementAt(0)}";
+		foreach(var id in twitchIds.Skip(1))
+		{
+			queryParams += $"&id={id}";
+		}
+
+		var request = new HttpRequestMessage(HttpMethod.Get, $"users?{queryParams}");
 
 		request.Headers.Add("Authorization", $"Bearer {accessToken}");
 		request.Headers.Add("Client-Id", _options.Value.ClientId);
@@ -109,16 +113,14 @@ public class TwitchApiClient
             var errorData = await response.Content.ReadFromJsonAsync<TwitchErrorResponse>();
 			var errorMessage = errorData?.Message ?? errorData?.Error ?? response.ReasonPhrase ?? "Erro ao contatar a Twitch";
 			
-			return Result<TwitchUserData>.Failure(new Error(errorMessage, response.StatusCode));
+			return Result<IEnumerable<TwitchUserData>>.Failure(new Error(errorMessage, response.StatusCode));
 		}
 
 		var result = await response.Content.ReadFromJsonAsync<TwitchUserResponse>();
 
 		if (result == null)
-			return Result<TwitchUserData>.Failure(new Error("Usuário não encontrado.", HttpStatusCode.InternalServerError));
+			return Result<IEnumerable<TwitchUserData>>.Failure(new Error("Usuários não encontrados.", HttpStatusCode.InternalServerError));
 
-		var userData = result.Data.First();
-
-		return Result<TwitchUserData>.Success(userData);
-	}*/
+		return Result<IEnumerable<TwitchUserData>>.Success(result.Data);
+	}
 }
