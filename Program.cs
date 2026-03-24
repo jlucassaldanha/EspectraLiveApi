@@ -32,7 +32,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("FrontendPolicy", policy =>
     {
         policy
-            .WithOrigins(builder.Configuration["SpectraLive:FrontendUrl"] ?? "http://localhost:8000")
+            .WithOrigins(builder.Configuration["SpectraLive:FrontendUrl"] ?? "http://localhost:5173")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -58,6 +58,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
           ValidateAudience = false,
           ClockSkew = TimeSpan.Zero
         };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (context.Request.Cookies.TryGetValue("jwt", out var token))
+                    context.Token = token;
+
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -67,10 +78,11 @@ builder.Services.Configure<SpectraLiveSettings>(builder.Configuration.GetSection
 
 var app = builder.Build();
 
-app.UseCors();
-app.UseExceptionHandler();
+app.UseCors("FrontendPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseExceptionHandler();
 
 app.MapAuthEndpoints();
 app.MapPrefsEndpoints();
