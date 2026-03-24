@@ -24,7 +24,7 @@ public static class AuthEndpoints
 			return Results.Redirect(twitchAuthUrl);
 		});
 
-		group.MapGet("/callback", async (HttpContext context, AuthService authService, JwtService jwtService, string code, string? error) =>
+		group.MapGet("/callback", async (IOptions<SpectraLiveSettings> spectraLiveOptions, HttpContext context, AuthService authService, JwtService jwtService, string code, string? error) =>
 		{
 			if (error != null) return Results.Unauthorized();
 
@@ -65,7 +65,8 @@ public static class AuthEndpoints
 				}
 			);
 	
-			return Results.Ok(new { message = $"Usuário gravado com sucesso."});
+			//return Results.Ok(new { message = $"Usuário gravado com sucesso."});
+			return Results.Redirect(spectraLiveOptions.Value.FrontendUrl + "/success");
 		});
 
 		group.MapGet("/token", async (HttpContext context, AuthService authService, JwtService jwtService) =>
