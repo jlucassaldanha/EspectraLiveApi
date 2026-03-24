@@ -41,7 +41,7 @@ public static class InfoEndpoints
 		})
 		.RequireAuthorization();
 
-		group.MapGet("/mods", async (ClaimsPrincipal user, UserService userService) =>
+		group.MapGet("/mods", async (ClaimsPrincipal user, UserService userService, AuthService authService) =>
 		{
 			var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 			var twitchId = user.Claims.FirstOrDefault(c => c.Type == "twitchId")?.Value;
@@ -49,7 +49,7 @@ public static class InfoEndpoints
 			if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(twitchId))
 				return Results.Unauthorized();
 
-			var authResponse = await userService.GetTwitchUserAuthData(userId);
+			var authResponse = await authService.GetTwitchUserAuthData(userId);
 
 			if (authResponse.Error != null)
 				return Results.Problem(
@@ -86,7 +86,7 @@ public static class InfoEndpoints
 		})
 		.RequireAuthorization();
 
-		group.MapGet("/chatters", async (ClaimsPrincipal user, UserService userService) =>
+		group.MapGet("/chatters", async (ClaimsPrincipal user, UserService userService, AuthService authService) =>
 		{
 			var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 			var twitchId = user.Claims.FirstOrDefault(c => c.Type == "twitchId")?.Value;
@@ -94,7 +94,7 @@ public static class InfoEndpoints
 			if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(twitchId))
 				return Results.Unauthorized();
 
-			var authResponse = await userService.GetTwitchUserAuthData(userId);
+			var authResponse = await authService.GetTwitchUserAuthData(userId);
 
 			if (authResponse.Error != null)
 				return Results.Problem(
@@ -131,7 +131,7 @@ public static class InfoEndpoints
 		})
 		.RequireAuthorization();
 
-		group.MapGet("/users", async (ClaimsPrincipal user, UserService userService, [FromBody] TwitchIdsRequest twitchIds) =>
+		group.MapGet("/users", async (ClaimsPrincipal user, UserService userService, AuthService authService, [FromBody] TwitchIdsRequest twitchIds) =>
 		{
 			var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 			var twitchId = user.Claims.FirstOrDefault(c => c.Type == "twitchId")?.Value;
@@ -139,7 +139,7 @@ public static class InfoEndpoints
 			if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(twitchId))
 				return Results.Unauthorized();
 
-			var authResponse = await userService.GetTwitchUserAuthData(userId);
+			var authResponse = await authService.GetTwitchUserAuthData(userId);
 
 			if (authResponse.Error != null)
 				return Results.Problem(

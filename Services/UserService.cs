@@ -13,12 +13,14 @@ public class UserService
 {
 	private readonly TwitchAuthClient _twitchAuth;
 	private readonly TwitchApiClient _twitchApi;
+	private readonly AuthService _authService;
 	private readonly IUserRepository _userRepository;
 
-	public UserService(TwitchAuthClient twitchAuth, TwitchApiClient twitchApi,  IOptions<SpectraLiveSettings> options, IUserRepository userRepository)
+	public UserService(TwitchAuthClient twitchAuth, TwitchApiClient twitchApi, IUserRepository userRepository, AuthService authService)
 	{
 		_twitchAuth = twitchAuth;
 		_twitchApi = twitchApi;
+		_authService = authService;
 		_userRepository = userRepository;
 	}
 
@@ -39,45 +41,6 @@ public class UserService
 		return Result<UserProfile>.Success(userProfile);
 	}
 
-	public async Task<Result<TwitchAuthData>> GetTwitchUserAuthData(string userId)
-	{
-		User? userProfileFromDb = await _userRepository.GetProfileByUserIdAsync(Guid.Parse(userId));
-
-		if (userProfileFromDb == null)
-			return Result<TwitchAuthData>.Failure(new Error("Usuário não encontrado no banco de dados.", HttpStatusCode.NotFound));
-
-		var twitchAuthData = new TwitchAuthData(
-			userProfileFromDb.AccessToken,
-			userProfileFromDb.RefreshToken,
-			userProfileFromDb.ExpiresIn
-		);
-
-		return Result<TwitchAuthData>.Success(twitchAuthData);
-	}
-
-	public async Task<Result<string>> RefreshUserToken(string twitchId, string refreshToken)
-	{
-		var refreshResponse = await _twitchAuth.GetRefreshToken(refreshToken);
-				
-		if (refreshResponse.Error != null)
-			return Result<string>.Failure(new Error(refreshResponse.Error.Message, refreshResponse.Error.ErrorCode));
-		if (refreshResponse.Data == null)
-			return Result<string>.Failure(new Error("Erro inesperado ao tentar usar Refresh Token da Twitch", HttpStatusCode.InternalServerError));
-
-		var userFromDb = await _userRepository.GetProfileByTwitchIdAsync(twitchId);
-		
-		if (userFromDb == null)
-			return Result<string>.Failure(new Error("Usuário não encontrado no banco de dados.", HttpStatusCode.NotFound));
-
-		userFromDb.AccessToken = refreshResponse.Data.AccessToken;
-		userFromDb.RefreshToken = refreshResponse.Data.RefreshToken;
-		userFromDb.ExpiresIn = refreshResponse.Data.ExpiresIn;
-		
-		await _userRepository.UpdateAsync(userFromDb);
-
-		return Result<string>.Success(userFromDb.AccessToken);
-	}
-
 	public async Task<Result<TwitchUsersIds>> GetTwitchUserMods(string accessToken, string refreshToken, string twitchId)
 	{
 		var response = await _twitchApi.GetUserMods(accessToken, twitchId);
@@ -87,7 +50,7 @@ public class UserService
 
 		if (response.Error?.ErrorCode == HttpStatusCode.Unauthorized)
 		{
-			var newAccessToken = await RefreshUserToken(twitchId, refreshToken);
+			var newAccessToken = await _authService.RefreshTwitchToken(twitchId, refreshToken);
 
 			if (newAccessToken.Error != null)
 				return Result<TwitchUsersIds>.Failure(new Error(newAccessToken.Error.Message, newAccessToken.Error.ErrorCode));
@@ -117,7 +80,7 @@ public class UserService
 
 		if (response.Error?.ErrorCode == HttpStatusCode.Unauthorized)
 		{
-			var newAccessToken = await RefreshUserToken(twitchId, refreshToken);
+			var newAccessToken = await _authService.RefreshTwitchToken(twitchId, refreshToken);
 
 			if (newAccessToken.Error != null)
 				return Result<TwitchUsersIds>.Failure(new Error(newAccessToken.Error.Message, newAccessToken.Error.ErrorCode));
@@ -147,7 +110,7 @@ public class UserService
 
 		if (response.Error?.ErrorCode == HttpStatusCode.Unauthorized)
 		{
-			var newAccessToken = await RefreshUserToken(twitchUserId, refreshToken);
+			var newAccessToken = await _authService.RefreshTwitchToken(twitchUserId, refreshToken);
 
 			if (newAccessToken.Error != null)
 				return Result<IEnumerable<TwitchUserProfile>>.Failure(new Error(newAccessToken.Error.Message, newAccessToken.Error.ErrorCode));

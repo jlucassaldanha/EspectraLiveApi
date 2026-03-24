@@ -97,4 +97,43 @@ public class AuthService
 
 		return Result<UserData>.Success(newUserData);
 	}
+
+	public async Task<Result<TwitchAuthData>> GetTwitchUserAuthData(string userId)
+	{
+		User? userProfileFromDb = await _userRepository.GetProfileByUserIdAsync(Guid.Parse(userId));
+
+		if (userProfileFromDb == null)
+			return Result<TwitchAuthData>.Failure(new Error("Usuário não encontrado no banco de dados.", HttpStatusCode.NotFound));
+
+		var twitchAuthData = new TwitchAuthData(
+			userProfileFromDb.AccessToken,
+			userProfileFromDb.RefreshToken,
+			userProfileFromDb.ExpiresIn
+		);
+
+		return Result<TwitchAuthData>.Success(twitchAuthData);
+	}
+
+	public async Task<Result<string>> RefreshTwitchToken(string twitchId, string refreshToken)
+	{
+		var refreshResponse = await _twitchAuth.GetRefreshToken(refreshToken);
+				
+		if (refreshResponse.Error != null)
+			return Result<string>.Failure(new Error(refreshResponse.Error.Message, refreshResponse.Error.ErrorCode));
+		if (refreshResponse.Data == null)
+			return Result<string>.Failure(new Error("Erro inesperado ao tentar usar Refresh Token da Twitch", HttpStatusCode.InternalServerError));
+
+		var userFromDb = await _userRepository.GetProfileByTwitchIdAsync(twitchId);
+		
+		if (userFromDb == null)
+			return Result<string>.Failure(new Error("Usuário não encontrado no banco de dados.", HttpStatusCode.NotFound));
+
+		userFromDb.AccessToken = refreshResponse.Data.AccessToken;
+		userFromDb.RefreshToken = refreshResponse.Data.RefreshToken;
+		userFromDb.ExpiresIn = refreshResponse.Data.ExpiresIn;
+		
+		await _userRepository.UpdateAsync(userFromDb);
+
+		return Result<string>.Success(userFromDb.AccessToken);
+	}
 }
