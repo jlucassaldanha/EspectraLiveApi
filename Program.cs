@@ -14,6 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<TwitchService>();
 builder.Services.AddScoped<UnviewsService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
