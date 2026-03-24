@@ -36,6 +36,8 @@ Até o momento, a API é capaz de:
     *   Criação de tokens de sessão temporários salvos em cache/cookies de forma segura para o Frontend.
 *   **Perfil de Usuário:**
     *   Busca de dados do perfil do usuário no banco de dados ou diretamente na API da Twitch de forma autenticada, convertendo as respostas brutas da Twitch em contratos limpos para o frontend.
+*   **Listagem de usuários:**
+    *   Listagem de usuários, Moderadores e pessoas ativas no chat da Twitch com o mesmo padrão de contrato do perfil de usuário.
 *   **Tratamento de Erros Padronizado:**
     *   Uso do `Result Pattern` para capturar falhas da Twitch ou de regras de negócio internas sem o uso excessivo (e custoso) de exceções.
     *   Conversão automática de falhas internas para *HTTP Status Codes* semânticos (400, 401, 404).

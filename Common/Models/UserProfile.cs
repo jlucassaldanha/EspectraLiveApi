@@ -1,9 +1,6 @@
 namespace SpectraLiveApi.Common.Models;
 
-public record UserData(
-	string AccessToken,
-	string RefreshToken,
-	int ExpiresIn,
+public record UserProfile(
 	string TwitchId,
 	string DisplayName, 
 	string ProfileImgUrl,

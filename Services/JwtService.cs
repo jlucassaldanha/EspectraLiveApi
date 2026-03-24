@@ -14,20 +14,20 @@ public class JwtService
 		_secretKey = config["SpectraLive:SecretKey"] ?? throw new ArgumentException("Chave secreta do JWT não encontrada");
 	}
 
-	public string GenerateToken(string userId, string twitchId)
+	public string GenerateToken(string userId, string twitchId, DateTime expires)
 	{
 		var key = Encoding.ASCII.GetBytes(_secretKey);
 
 		var claims = new[]
 		{
-			new Claim("userId", userId),
+			new Claim(ClaimTypes.NameIdentifier, userId),
 			new Claim("twitchId", twitchId)
 		};
 
 		var tokenDescriptor = new SecurityTokenDescriptor
 		{
 			Subject = new ClaimsIdentity(claims),
-			Expires = DateTime.UtcNow.AddDays(7),
+			Expires = expires,
 			SigningCredentials = new SigningCredentials(
 				new SymmetricSecurityKey(key),
 				SecurityAlgorithms.HmacSha256Signature

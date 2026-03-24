@@ -490,4 +490,5 @@ $RECYCLE.BIN/
 *.wal
 *.tmp
 *.db-wal
+*.db-shm
 *.db-tmp

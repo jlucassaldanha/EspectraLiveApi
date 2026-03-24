@@ -1,9 +1,7 @@
 using Microsoft.Extensions.Options;
-using SpectraLiveApi.DTOs;
 using SpectraLiveApi.Common;
 using SpectraLiveApi.Settings;
 using SpectraLiveApi.DTOs.Twitch;
-using System.Net;
 
 namespace SpectraLiveApi.Integrations;
 
