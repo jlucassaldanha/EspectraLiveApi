@@ -10,7 +10,7 @@ public static class PrefsEndpoints
 {
 	public static void MapPrefsEndpoints(this WebApplication app)
 	{
-		var group = app.MapGroup("/prefs");
+		var group = app.MapGroup("/preferences");
 
 		group.MapPost("/unviews", async (ClaimsPrincipal user, UnviewsService unviewsService, [FromBody] TwitchIdsRequest unviewIds) =>
 		{
