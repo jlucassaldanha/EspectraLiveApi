@@ -2,23 +2,18 @@ using System.Net;
 using SpectraLiveApi.Common;
 using SpectraLiveApi.Common.Models;
 using SpectraLiveApi.Integrations;
-using SpectraLiveApi.Repositories;
 
 namespace SpectraLiveApi.Services;
 
 public class TwitchService
 {
-	private readonly TwitchAuthClient _twitchAuth;
 	private readonly TwitchApiClient _twitchApi;
 	private readonly AuthService _authService;
-	private readonly IUserRepository _userRepository;
 
-	public TwitchService(TwitchAuthClient twitchAuth, TwitchApiClient twitchApi, IUserRepository userRepository, AuthService authService)
+	public TwitchService(TwitchApiClient twitchApi, AuthService authService)
 	{
-		_twitchAuth = twitchAuth;
 		_twitchApi = twitchApi;
 		_authService = authService;
-		_userRepository = userRepository;
 	}
 
 	public async Task<Result<TwitchUsersIds>> GetTwitchUserModeratorsIds(string userId, string twitchId)

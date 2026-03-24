@@ -87,7 +87,7 @@ public static class InfoEndpoints
 		})
 		.RequireAuthorization();
 
-		group.MapGet("/users", async (ClaimsPrincipal user, UserService userService, AuthService authService, TwitchService twitchService, [FromBody] TwitchIdsRequest twitchIds) =>
+		group.MapPost("/users", async (ClaimsPrincipal user, TwitchService twitchService, [FromBody] TwitchIdsRequest twitchIds) =>
 		{
 			var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 			var twitchId = user.Claims.FirstOrDefault(c => c.Type == "twitchId")?.Value;

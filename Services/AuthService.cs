@@ -16,7 +16,7 @@ public class AuthService
 	private readonly string _apiUrl;
 	private readonly IUserRepository _userRepository;
 
-	public AuthService(TwitchAuthClient twitchAuth, TwitchApiClient twitchApi, IOptions<SpectraLiveSettings> options, IUserRepository userRepository, JwtService jwtService)
+	public AuthService(TwitchAuthClient twitchAuth, TwitchApiClient twitchApi, IOptions<SpectraLiveSettings> options, IUserRepository userRepository)
 	{
 		_twitchAuth = twitchAuth;
 		_twitchApi = twitchApi;

@@ -1,8 +1,5 @@
-using Microsoft.Extensions.Options;
 using SpectraLiveApi.Common;
 using SpectraLiveApi.Common.Models;
-using SpectraLiveApi.Settings;
-using SpectraLiveApi.Integrations;
 using SpectraLiveApi.Repositories;
 using SpectraLiveApi.Entities;
 using System.Net;
@@ -11,16 +8,10 @@ namespace SpectraLiveApi.Services;
 
 public class UserService
 {
-	private readonly TwitchAuthClient _twitchAuth;
-	private readonly TwitchApiClient _twitchApi;
-	private readonly AuthService _authService;
 	private readonly IUserRepository _userRepository;
 
-	public UserService(TwitchAuthClient twitchAuth, TwitchApiClient twitchApi, IUserRepository userRepository, AuthService authService)
+	public UserService(IUserRepository userRepository)
 	{
-		_twitchAuth = twitchAuth;
-		_twitchApi = twitchApi;
-		_authService = authService;
 		_userRepository = userRepository;
 	}
 
@@ -40,6 +31,4 @@ public class UserService
 
 		return Result<UserProfile>.Success(userProfile);
 	}
-
-	
 }
